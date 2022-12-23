@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <mem.h>
 
+class Instruction;
+
 enum class Registers : uint16_t {
     A,
     B,
@@ -23,6 +25,8 @@ public:
     uint32_t Step(Memory& mem);
 
 private:
+    uint8_t Eval(const Instruction& nextInstruction);
+    
     uint16_t m_pc;
     uint16_t m_sp;
     uint16_t m_ex;

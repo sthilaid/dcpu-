@@ -3,19 +3,6 @@
 
 #define NDEBUG
 
-Instruction::Instruction()
-   : Instruction{OpCode_Special, Value_Register_A, Value_Register_A, 0, 0}
-{    
-}
-Instruction::Instruction(OpCode op, Value a, Value b, uint16_t wordA, uint16_t wordB)
-    : m_opcode { op }
-    , m_a { a }
-    , m_b { b }
-    , m_wordA { wordA }
-    , m_wordB { wordB }
-{
-}
-
 string Decoder::ValueToStr(Value v, bool isA, uint16_t nextword){
     switch (v){
     case Value_Register_A: return "A";
@@ -129,25 +116,35 @@ vector<uint16_t> Decoder::PackBytes(const vector<uint8_t>& buffer){
     return packedBuffer;
 }
 
+Instruction Decoder::Decode(const uint16_t* codebytePtr, uint32_t maxlen){
+    assert(codebytePtr != nullptr);
+    
+    uint8_t instructionSize = 1;
+    Instruction inst;
+    uint16_t codebyte = *codebytePtr;
+    inst.m_opcode = static_cast<OpCode>(codebyte & 0x1F);
+    inst.m_a = static_cast<Value>(codebyte >> 0xA);
+    inst.m_b = static_cast<Value>((codebyte >> 0x5) & 0x1F);
+
+    if (isMultibyteValue(inst.m_a)) {
+        assert(++instructionSize < maxlen);
+        inst.m_wordA = codebytePtr[1];
+    }
+    if (isMultibyteValue(inst.m_b)) {
+        assert(++instructionSize < maxlen);
+        inst.m_wordB = codebytePtr[instructionSize-1];
+    }
+    // printf("-decoded- op: %02X, b: %02X, a: %02X, wordB: %04X, wordA: %04X, inst: %s\n",
+    //        inst.m_opcode, inst.m_b, inst.m_a, inst.m_wordB, inst.m_wordA, inst.toStr().c_str());
+    return inst;
+}
+
 vector<Instruction> Decoder::Decode(const vector<uint16_t>& buffer){
     vector<Instruction> instructions;
-    for (uint16_t i=0; i<buffer.size(); ++i) {
+    for (uint16_t i=0; i<buffer.size();) {
         uint16_t raw = buffer[i];
-        Instruction& inst = instructions.emplace_back();
-        inst.m_opcode = static_cast<OpCode>(raw & 0x1F);
-        inst.m_a = static_cast<Value>(raw >> 0xA);
-        inst.m_b = static_cast<Value>((raw >> 0x5) & 0x1F);
-
-        if (inst.m_a == Value_Next) {
-            assert(i+1 < buffer.size());
-            inst.m_wordA = buffer[++i];
-        }
-        if (inst.m_b == Value_Next) {
-            assert(i+1 < buffer.size());
-            inst.m_wordB = buffer[++i];
-        }
-        // printf("-decoded- op: %02X, b: %02X, a: %02X, wordB: %04X, wordA: %04X, inst: %s\n",
-        //        inst.m_opcode, inst.m_b, inst.m_a, inst.m_wordB, inst.m_wordA, inst.toStr().c_str());
+        instructions.push_back(Decode(&buffer[i], buffer.size() - i));
+        i += instructions.back().ByteSize();
     }
     return instructions;
 }
