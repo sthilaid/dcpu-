@@ -25,14 +25,18 @@ int main(int argc, char** args) {
         }
     }
     binFileStream.close();
-    
-    vector<Instruction> instructions = Decoder::Decode(rawcode);
+
+    // for(int i=0; i<rawcode.size(); ++i) printf("%02X, ", rawcode[i]); printf("\n");
+    vector<uint16_t> packedBytes = Decoder::PackBytes(rawcode);
+    // for(int i=0; i<packedBytes.size(); ++i) printf("%04X, ", packedBytes[i]); printf("\n");
+    vector<Instruction> instructions = Decoder::Decode(packedBytes);
     printf("decoded instructions:\n");
     for (const Instruction& i : instructions)
         printf("  %s\n", i.toStr().c_str());
     
     Memory mem;
     DCPU cpu;
+    mem.LoadProgram(packedBytes);
     //mem.Dump();
     //testEncodeDecode();
     return 0;

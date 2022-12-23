@@ -17,9 +17,15 @@ void testEncodeDecode() {
         printf("%s\n", i.toStr().c_str());
     }
     
-    vector<uint8_t> binary = Decoder::Encode(instructions);
-    for (uint8_t b : binary) {
+    vector<uint16_t> binary = Decoder::Encode(instructions);
+    for (uint16_t b : binary) {
         printf("0x%04X, ", b);
+    }
+    printf("\n");
+
+    vector<uint8_t> unpackedBinary = Decoder::UnpackBytes(binary);
+    for (uint8_t b : unpackedBinary) {
+        printf("0x%02X, ", b);
     }
     printf("\n");
 
@@ -41,7 +47,8 @@ int main(int argc, char** args) {
     vector<Instruction> instructions = GenerateTestInstructions();
     printf("comiling instructions:\n");
     for(const Instruction& i : instructions) printf("  %s\n", i.toStr().c_str());
-    vector<uint8_t> rawdata = Decoder::Encode(instructions);
+    vector<uint16_t> codebytes = Decoder::Encode(instructions);
+    vector<uint8_t> rawdata = Decoder::UnpackBytes(codebytes);
     for (uint8_t d : rawdata) {
         binFileStream.write(reinterpret_cast<char*>(&d), 1);
     }

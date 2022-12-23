@@ -20,6 +20,7 @@ class DCPU {
 
 public:
     DCPU();
+    uint32_t Step(Memory& mem);
 
 private:
     uint16_t m_pc;

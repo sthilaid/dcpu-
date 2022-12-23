@@ -93,45 +93,58 @@ uint16_t from8BitLittleEndian(const vector<uint8_t>& buffer, uint16_t& i) {
     return (bigEnd << 8) | littleEnd;
 }
 
-vector<uint8_t> Decoder::Encode(const vector<Instruction>& instructions){
-    vector<uint8_t> codeBuffer;
+vector<uint16_t> Decoder::Encode(const vector<Instruction>& instructions){
+    vector<uint16_t> codeBuffer;
     for (const Instruction& inst : instructions){
         const uint16_t opcode = inst.m_opcode;
         const uint16_t a = inst.m_a;
         const uint16_t b = inst.m_b;
         const uint16_t binaryInstruction = (a << 0xA) | (b << 0x5) | opcode;
-        pushTo8BitLittleEndian(binaryInstruction, codeBuffer);
-        // printf("-encoded- inst little: %02X, big: %02X", codeBuffer[codeBuffer.size()-2], codeBuffer[codeBuffer.size()-1]);
+        codeBuffer.push_back(binaryInstruction);
 
         if (a == Value_Next) {
-            pushTo8BitLittleEndian(inst.m_wordA, codeBuffer);
-            // printf(" wordA little: %02X, big: %02X", codeBuffer[codeBuffer.size()-2], codeBuffer[codeBuffer.size()-1]);
+            codeBuffer.push_back(inst.m_wordA);
         }
+
         if (b == Value_Next) {
-            pushTo8BitLittleEndian(inst.m_wordB, codeBuffer);
-            //printf(" wordB little: %02X, big: %02X\n", codeBuffer[codeBuffer.size()-2], codeBuffer[codeBuffer.size()-1]);
+            codeBuffer.push_back(inst.m_wordB);
         }
-        //printf("\n");
     }
     return codeBuffer;
 }
 
-vector<Instruction> Decoder::Decode(const vector<uint8_t>& buffer){
-    vector<Instruction> instructions;
+vector<uint8_t> Decoder::UnpackBytes(const vector<uint16_t>& buffer){
+    vector<uint8_t> unpackedBuffer;
+    for (uint16_t i=0; i<buffer.size(); ++i) {
+        pushTo8BitLittleEndian(buffer[i], unpackedBuffer);
+    }
+    return unpackedBuffer;
+}
+
+vector<uint16_t> Decoder::PackBytes(const vector<uint8_t>& buffer){
+    vector<uint16_t> packedBuffer;
     for (uint16_t i=0; i<buffer.size()-1;) {
-        uint16_t raw = from8BitLittleEndian(buffer, i);
+        packedBuffer.push_back(from8BitLittleEndian(buffer, i));
+    }
+    return packedBuffer;
+}
+
+vector<Instruction> Decoder::Decode(const vector<uint16_t>& buffer){
+    vector<Instruction> instructions;
+    for (uint16_t i=0; i<buffer.size(); ++i) {
+        uint16_t raw = buffer[i];
         Instruction& inst = instructions.emplace_back();
         inst.m_opcode = static_cast<OpCode>(raw & 0x1F);
         inst.m_a = static_cast<Value>(raw >> 0xA);
         inst.m_b = static_cast<Value>((raw >> 0x5) & 0x1F);
 
         if (inst.m_a == Value_Next) {
-            assert(i+2 < buffer.size());
-            inst.m_wordA = from8BitLittleEndian(buffer, i);
+            assert(i+1 < buffer.size());
+            inst.m_wordA = buffer[++i];
         }
         if (inst.m_b == Value_Next) {
-            assert(i+2 < buffer.size());
-            inst.m_wordB = from8BitLittleEndian(buffer, i);
+            assert(i+1 < buffer.size());
+            inst.m_wordB = buffer[++i];
         }
         // printf("-decoded- op: %02X, b: %02X, a: %02X, wordB: %04X, wordA: %04X, inst: %s\n",
         //        inst.m_opcode, inst.m_b, inst.m_a, inst.m_wordB, inst.m_wordA, inst.toStr().c_str());

@@ -8,3 +8,7 @@ DCPU::DCPU()
 {
     memset(&m_registers, 0, RegistersCount*2);
 }
+
+uint32_t DCPU::Step(Memory& mem) {
+    return 1;
+}
