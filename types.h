@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 using std::string;
 
@@ -9,7 +11,7 @@ enum Value {
     Value_Register_Y = 0x04,
     Value_Register_Z = 0x05,
     Value_Register_I = 0x06,
-    Value_Register_K = 0x07,
+    Value_Register_J = 0x07,
     Value_Register_Ref_A = 0x8,
     Value_Register_Ref_B = 0x9,
     Value_Register_Ref_C = 0x0A,
@@ -17,7 +19,7 @@ enum Value {
     Value_Register_Ref_Y = 0x0C,
     Value_Register_Ref_Z = 0x0D,
     Value_Register_Ref_I = 0x0E,
-    Value_Register_Ref_K = 0x0F,
+    Value_Register_Ref_J = 0x0F,
     Value_Register_RefNext_A = 0x10,
     Value_Register_RefNext_B = 0x11,
     Value_Register_RefNext_C = 0x12,
@@ -25,7 +27,7 @@ enum Value {
     Value_Register_RefNext_Y = 0x14,
     Value_Register_RefNext_Z = 0x15,
     Value_Register_RefNext_I = 0x16,
-    Value_Register_RefNext_K = 0x17,
+    Value_Register_RefNext_J = 0x17,
     Value_PushPop = 0x18,
     Value_Peek = 0x19,
     Value_Pick = 0x1A,
@@ -55,8 +57,8 @@ struct Instruction
     uint16_t m_wordB = 0;
 
     Instruction();
-    Instruction(OpCode op, Value a, Value b, uint16_t wordA=0, uint16_t wordB=0);
-    uint8_t ByteSize() const;
+    Instruction(OpCode op, Value b, Value a, uint16_t wordB=0, uint16_t wordA=0);
+    uint8_t WordCount() const;
     string toStr() const;
 };
 
@@ -70,7 +72,7 @@ inline bool isMultibyteValue(Value v) {
     case Value_Register_RefNext_Y:
     case Value_Register_RefNext_Z:
     case Value_Register_RefNext_I:
-    case Value_Register_RefNext_K:
+    case Value_Register_RefNext_J:
     case Value_Pick:
     case Value_Next:
     case Value_NextLitteral:
@@ -85,7 +87,7 @@ inline Instruction::Instruction()
 {    
 }
 
-inline Instruction::Instruction(OpCode op, Value a, Value b, uint16_t wordA, uint16_t wordB)
+inline Instruction::Instruction(OpCode op, Value b, Value a, uint16_t wordB, uint16_t wordA)
     : m_opcode { op }
     , m_a { a }
     , m_b { b }
@@ -94,7 +96,67 @@ inline Instruction::Instruction(OpCode op, Value a, Value b, uint16_t wordA, uin
 {
 }
 
-inline uint8_t Instruction::ByteSize() const {
+inline uint8_t Instruction::WordCount() const {
     return 1 + (isMultibyteValue(m_a) ? 1 : 0) + (isMultibyteValue(m_b) ? 1 : 0) ;
 }
 
+
+inline string ValueToStr(Value v, bool isA, uint16_t nextword){
+    switch (v){
+    case Value_Register_A: return "A";
+    case Value_Register_B: return "B";
+    case Value_Register_C: return "C";
+    case Value_Register_X: return "X";
+    case Value_Register_Y: return "Y";
+    case Value_Register_Z: return "Z";
+    case Value_Register_I: return "I";
+    case Value_Register_J: return "J";
+    case Value_Register_Ref_A: return "[A]";
+    case Value_Register_Ref_B: return "[B]";
+    case Value_Register_Ref_C: return "[C]";
+    case Value_Register_Ref_X: return "[X]";
+    case Value_Register_Ref_Y: return "[Y]";
+    case Value_Register_Ref_Z: return "[Z]";
+    case Value_Register_Ref_I: return "[I]";
+    case Value_Register_Ref_J: return "[J]";
+    case Value_Register_RefNext_A: return "[A+"+std::to_string(nextword)+"]";
+    case Value_Register_RefNext_B: return "[B+"+std::to_string(nextword)+"]";
+    case Value_Register_RefNext_C: return "[C+"+std::to_string(nextword)+"]";
+    case Value_Register_RefNext_X: return "[X+"+std::to_string(nextword)+"]";
+    case Value_Register_RefNext_Y: return "[Y+"+std::to_string(nextword)+"]";
+    case Value_Register_RefNext_Z: return "[Z+"+std::to_string(nextword)+"]";
+    case Value_Register_RefNext_I: return "[I+"+std::to_string(nextword)+"]";
+    case Value_Register_RefNext_J: return "[J+"+std::to_string(nextword)+"]";
+    case Value_PushPop: return isA ? "POP" : "PUSH";
+    case Value_Peek: return "PEEK";
+    case Value_Pick: return "PICK "+ std::to_string(nextword);
+    case Value_SP: return "SP";
+    case Value_PC: return "PC";
+    case Value_EX: return "EX";
+    case Value_Next: return "["+std::to_string(nextword)+"]";
+    case Value_NextLitteral: return std::to_string(nextword);
+    default: return "[unknown]";
+    }
+}
+
+inline string OpCodeToStr(OpCode op){
+    switch (op) {
+    case OpCode_Special: return "[todo-special]";
+    case OpCode_SET: return "SET";
+    case OpCode_ADD: return "ADD";
+    case OpCode_SUB: return "SUB";
+    case OpCode_MUL: return "MUL";
+    case OpCode_MLI: return "MLI";
+    case OpCode_DIV: return "DIV";
+    default: return "[unknown]";
+    }
+}
+
+inline string Instruction::toStr() const {
+    string msg = OpCodeToStr(m_opcode)
+        + " "
+        + ValueToStr(m_b, false, m_wordB)
+        + ", "
+        + ValueToStr(m_a, true, m_wordA);
+    return msg;
+}

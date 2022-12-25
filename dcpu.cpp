@@ -1,5 +1,6 @@
 #include <dcpu.h>
 #include <decoder.h>
+#include <cassert>
 
 DCPU::DCPU()
     : m_pc {0}
@@ -7,15 +8,115 @@ DCPU::DCPU()
     , m_ex {0}
     , m_ia {0}
 {
-    memset(&m_registers, 0, RegistersCount*2);
+    memset(&m_registers, 0, Registers_Count*2);
 }
 
-uint8_t DCPU::Eval(const Instruction& nextInstruction) {
+uint16_t* DCPU::GetAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord) {
+    switch (v) {
+    case Value_Register_A: return &m_registers[Registers_A];
+    case Value_Register_B: return &m_registers[Registers_B];
+    case Value_Register_C: return &m_registers[Registers_C];
+    case Value_Register_X: return &m_registers[Registers_X];
+    case Value_Register_Y: return &m_registers[Registers_Y];
+    case Value_Register_Z: return &m_registers[Registers_Z];
+    case Value_Register_I: return &m_registers[Registers_I];
+    case Value_Register_J: return &m_registers[Registers_J];
+    case Value_Register_Ref_A: return mem+m_registers[Registers_A];
+    case Value_Register_Ref_B: return mem+m_registers[Registers_B];
+    case Value_Register_Ref_C: return mem+m_registers[Registers_C];
+    case Value_Register_Ref_X: return mem+m_registers[Registers_X];
+    case Value_Register_Ref_Y: return mem+m_registers[Registers_Y];
+    case Value_Register_Ref_Z: return mem+m_registers[Registers_Z];
+    case Value_Register_Ref_I: return mem+m_registers[Registers_I];
+    case Value_Register_Ref_J: return mem+m_registers[Registers_J];
+    case Value_Register_RefNext_A: return mem+(m_registers[Registers_A] + extraWord);
+    case Value_Register_RefNext_B: return mem+(m_registers[Registers_B] + extraWord);
+    case Value_Register_RefNext_C: return mem+(m_registers[Registers_C] + extraWord);
+    case Value_Register_RefNext_X: return mem+(m_registers[Registers_X] + extraWord);
+    case Value_Register_RefNext_Y: return mem+(m_registers[Registers_Y] + extraWord);
+    case Value_Register_RefNext_Z: return mem+(m_registers[Registers_Z] + extraWord);
+    case Value_Register_RefNext_I: return mem+(m_registers[Registers_I] + extraWord);
+    case Value_Register_RefNext_J: return mem+(m_registers[Registers_J] + extraWord);
+    case Value_PushPop: return isA ? mem + (m_sp++) : mem + (--m_sp);
+    case Value_Peek: return mem + m_sp;
+    case Value_Pick: return mem + (m_sp + extraWord);
+    case Value_SP: return &m_sp;
+    case Value_PC: return &m_pc;
+    case Value_EX: return &m_ex;
+    case Value_Next: return mem + extraWord;
+    case Value_NextLitteral: return &extraWord;
+    default:
+        assert(false);
+        return nullptr;
+    }
+}
+
+uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
+    printf("evaluating mem[0x%04X]: %s\n", m_pc, inst.toStr().c_str());
+    uint16_t* a_addr = GetAddrPtr(mem, true, inst.m_a, inst.m_wordA);
+    uint16_t* b_addr= GetAddrPtr(mem, false, inst.m_b, inst.m_wordB);
+    
+    switch (inst.m_opcode) {
+    case OpCode_Special:{
+        break;
+    }
+    case OpCode_SET:{
+        *b_addr = *a_addr;
+        break;
+    }
+    case OpCode_ADD:{
+        uint16_t res =  *b_addr + *a_addr;
+        *b_addr = res;
+        m_ex = (res < *a_addr || res < *b_addr) ? 1 : 0;
+        break;
+    }
+    case OpCode_SUB:{
+        uint16_t res = *b_addr - *a_addr;
+        *b_addr = res;
+        m_ex = res > *b_addr ? 0xFFFF : 0;
+        break;
+    }
+    case OpCode_MUL:{
+        uint32_t res = *b_addr * *a_addr;
+        *b_addr = static_cast<uint16_t>(0xFFFF & res);
+        m_ex = static_cast<uint16_t>((res>>16) & 0xFFFF);
+        break;
+    }
+    case OpCode_MLI:{
+        // todo signed
+        break;
+    }
+    case OpCode_DIV:{
+        if (*a_addr == 0) {
+            *b_addr = m_ex = 0;
+        } else {
+            uint32_t res = *b_addr / *a_addr;
+            *b_addr = static_cast<uint16_t>(0xFFFF & res);
+            m_ex = static_cast<uint16_t>(((*b_addr << 16) / *a_addr) & 0xFFFF);
+        }
+        break;
+    }
+    default:
+        assert(false);
+    }
     return 1;
 }
 
 uint32_t DCPU::Step(Memory& mem) {
     uint16_t* codebytePtr = mem+m_pc;
     Instruction nextInstruction = Decoder::Decode(codebytePtr, mem.LastValidAddress-m_pc);
-    return Eval(nextInstruction);
+    const uint8_t instWordCount = nextInstruction.WordCount();
+    const uint8_t framecount = Eval(mem, nextInstruction);
+    m_pc += instWordCount;
+    return framecount;
+}
+
+void DCPU::PrintRegisters() const {
+    printf("pc: %04X\n", m_pc);
+    printf("sp: %04X\n", m_sp);
+    printf("ex: %04X\n", m_ex);
+    printf("ia: %04X\n", m_ia);
+    for (int i=0; i<Registers_Count; ++i) {
+        printf("%s: %04X (%d)\n", ValueToStr(static_cast<Value>(i), false, 0).c_str(), m_registers[i], m_registers[i]);
+    }
 }

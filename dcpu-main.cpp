@@ -37,7 +37,10 @@ int main(int argc, char** args) {
     Memory mem;
     DCPU cpu;
     mem.LoadProgram(packedBytes);
-    //mem.Dump();
-    //testEncodeDecode();
+
+    for (int i=0; i<instructions.size(); ++i) {
+        cpu.Step(mem);
+        cpu.PrintRegisters();
+    }
     return 0;
 }

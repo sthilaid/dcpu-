@@ -6,6 +6,7 @@ Memory::Memory() {
 
 void Memory::LoadProgram(const vector<uint16_t>& codebytes){
     for(uint16_t addr=0; addr < codebytes.size(); ++addr) {
+        // printf("codemem[%04X] = %04X\n", addr, codebytes[addr]);
         m_Buffer[addr] = codebytes[addr];
     }
 }

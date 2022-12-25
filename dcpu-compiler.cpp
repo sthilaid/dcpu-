@@ -5,8 +5,9 @@
 
 vector<Instruction> GenerateTestInstructions() {
     vector<Instruction> instructions;
-    instructions.push_back(Instruction{OpCode_SET, Value_Register_X, Value_Next, 0, 15});
+    instructions.push_back(Instruction{OpCode_SET, Value_Register_X, Value_NextLitteral, 0, 15});
     instructions.push_back(Instruction{OpCode_ADD, Value_Register_Y, Value_Register_X});
+    instructions.push_back(Instruction{OpCode_MUL, Value_Register_X, Value_Register_X});
     return instructions;
 }
 
