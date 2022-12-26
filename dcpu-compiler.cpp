@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <decoder.h>
+#include <dcpu-lispasm.h>
 #include <vector>
 #include <fstream>
 
@@ -37,15 +38,16 @@ void testEncodeDecode() {
 }
 
 int main(int argc, char** args) {
-    if (argc != 2) {
-        printf("usage: dcpu-compiler <output-file>\n");
+    if (argc != 3) {
+        printf("usage: dcpu-compiler <input-source-file> <binary-output-file>\n");
         return 1;
     }
 
-    vector<uint16_t> rawcode;
-    std::ofstream binFileStream(args[1], std::ios::binary);
+    vector<Instruction> instructions = LispAsmParser::ParseLispAsm(args[1]);
 
-    vector<Instruction> instructions = GenerateTestInstructions();
+    vector<uint16_t> rawcode;
+    std::ofstream binFileStream(args[2], std::ios::binary);
+
     printf("comiling instructions:\n");
     for(const Instruction& i : instructions) printf("  %s\n", i.toStr().c_str());
     vector<uint16_t> codebytes = Decoder::Encode(instructions);
@@ -55,7 +57,7 @@ int main(int argc, char** args) {
     }
     
     binFileStream.close();
-    printf("wrote %d bytes into file %s successfully.\n", rawdata.size(), args[1]);
+    printf("wrote %d bytes into file %s successfully.\n", rawdata.size(), args[2]);
 
     return 0;
 }

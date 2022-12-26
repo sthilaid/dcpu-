@@ -70,12 +70,14 @@ Instruction Decoder::Decode(const uint16_t* codebytePtr, uint32_t maxlen){
     inst.m_b = static_cast<Value>((codebyte >> 0x5) & 0x1F);
 
     if (isMultibyteValue(inst.m_a)) {
-        assert(++instructionSize < maxlen);
-        inst.m_wordA = codebytePtr[1];
+        inst.m_wordA = codebytePtr[instructionSize];
+        ++instructionSize;
+        assert(instructionSize <= maxlen);
     }
     if (isMultibyteValue(inst.m_b)) {
-        assert(++instructionSize < maxlen);
-        inst.m_wordB = codebytePtr[instructionSize-1];
+        inst.m_wordB = codebytePtr[instructionSize];
+        ++instructionSize;
+        assert(instructionSize <= maxlen);
     }
     // printf("-decoded- op: %02X, b: %02X, a: %02X, wordB: %04X, wordA: %04X, inst: %s\n",
     //        inst.m_opcode, inst.m_b, inst.m_a, inst.m_wordB, inst.m_wordA, inst.toStr().c_str());
