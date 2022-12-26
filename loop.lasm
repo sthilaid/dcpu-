@@ -1,0 +1,7 @@
+(set X 5)
+(set A 2)
+(label loop)
+(mul a 2)
+(sub x 1)
+(ifn x 0)
+(set pc loop)

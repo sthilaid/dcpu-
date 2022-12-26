@@ -54,6 +54,12 @@ struct SExp {
     string toStr() const;
 };
 
+struct LabelEnv {
+    string m_label="";
+    uint16_t m_addr=0;
+    LabelEnv(const string& label, uint16_t addr) : m_label(label), m_addr(addr) {}
+};
+
 class LispAsmParser {
 public:    
     static bool is_seperator(char c);
@@ -61,7 +67,7 @@ public:
 
     static vector<Token> Tokenize(std::ifstream& inputStream);
     static void ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode);
-    static void ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, uint16_t& outWord);
+    static void ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, uint16_t& outWord, const vector<LabelEnv>& labels);
     static vector<Instruction> ParseTokens(const vector<Token>& tokens);
     static vector<Instruction> ParseLispAsm(char* filename);
 };

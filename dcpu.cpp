@@ -179,11 +179,12 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
         break;
     }
     case OpCode_IFN: {
+        test:
         if (*b_addr == *a_addr) {
             Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
             const uint8_t currentWordCount = currentInstruction.WordCount();
             Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
-            m_pc += nextInstruction.WordCount();
+            m_pc += currentWordCount + nextInstruction.WordCount();
         }
         break;
     }
@@ -256,8 +257,10 @@ uint32_t DCPU::Step(Memory& mem) {
     uint16_t* codebytePtr = mem+m_pc;
     Instruction nextInstruction = Decoder::Decode(codebytePtr, mem.LastValidAddress-m_pc);
     const uint8_t instWordCount = nextInstruction.WordCount();
+    const uint16_t originalPC = m_pc;
     const uint8_t framecount = Eval(mem, nextInstruction);
-    m_pc += instWordCount;
+    if (m_pc == originalPC)
+        m_pc += instWordCount; // only increment if it wasn't changed
     return framecount;
 }
 

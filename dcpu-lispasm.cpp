@@ -1,4 +1,5 @@
 #include <dcpu-lispasm.h>
+#include <algorithm>
 
 string SExp::Val::toStr() const {
     switch (m_type) {
@@ -120,7 +121,8 @@ void LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode)
     assert(outOpcode != OpCode_Count);
 }
 
-void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, uint16_t& outWord) {
+void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, uint16_t& outWord,
+                                       const vector<LabelEnv>& labels) {
     switch (val.m_type) {
     case SExp::Val::Number: {
         // todo, check when isA for embedded number
@@ -129,14 +131,21 @@ void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& ou
         break;
     }
     case SExp::Val::Symbol: {
-        string upperSym = toUpcase(val.m_symVal);
-        for(int i=0; i<Value_Count; ++i) {
-            if (upperSym == ValueToStr(static_cast<Value>(i), isA, 0)) {
-                out = static_cast<Value>(i);
-                outWord = 0;
-                break;
+        auto findIt = std::find_if(labels.begin(), labels.end(), [&val](const LabelEnv& lab) { return val.m_symVal == lab.m_label; });
+        if (findIt != labels.end()) {
+            out = Value_NextLitteral;
+            outWord = findIt->m_addr;
+        } else {
+            string upperSym = toUpcase(val.m_symVal);
+            for(int i=0; i<Value_Count; ++i) {
+                if (upperSym == ValueToStr(static_cast<Value>(i), isA, 0)) {
+                    out = static_cast<Value>(i);
+                    outWord = 0;
+                    break;
+                }
             }
         }
+        assert(out != Value_Count);
         break;
     }
     case SExp::Val::SExp: {
@@ -178,16 +187,31 @@ void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& ou
     }
 }
 
+uint16_t GetAddr(const vector<Instruction>& instructions) {
+    uint16_t addr = 0;
+    for (const Instruction& i : instructions)
+        addr += i.WordCount();
+    return addr;
+}
+
 vector<Instruction> LispAsmParser::ParseTokens(const vector<Token>& tokens) {
+    vector<LabelEnv> labels;
     vector<Instruction> instructions;
     vector<SExp*> sexpressions = SExp::ParseSExpressions(tokens);
     for (SExp* sexp : sexpressions) {
+        if (sexp->m_values.size() == 2
+            && sexp->m_values[0].m_type == SExp::Val::Symbol
+            && toUpcase(sexp->m_values[0].m_symVal) == "LABEL"
+            && sexp->m_values[1].m_type == SExp::Val::Symbol) {
+            labels.push_back(LabelEnv{sexp->m_values[1].m_symVal, GetAddr(instructions)});
+            continue;
+        }
         assert(sexp->m_values.size() == 3);
 
         Instruction& inst = instructions.emplace_back();
         ParseOpCodeFromSexp(sexp->m_values[0], inst.m_opcode);
-        ParseValueFromSexp(sexp->m_values[1], false, inst.m_b, inst.m_wordB);
-        ParseValueFromSexp(sexp->m_values[2], true, inst.m_a, inst.m_wordA);
+        ParseValueFromSexp(sexp->m_values[1], false, inst.m_b, inst.m_wordB, labels);
+        ParseValueFromSexp(sexp->m_values[2], true, inst.m_a, inst.m_wordA, labels);
 
         SExp::Delete(sexp);
     }
