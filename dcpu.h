@@ -25,10 +25,11 @@ public:
     uint32_t Step(Memory& mem);
     void PrintRegisters() const;
 
+    uint16_t GetPC() const { return m_pc; }
+
 private:
     uint16_t* GetAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord);
     uint8_t Eval(Memory& mem, Instruction& nextInstruction);
-    
     
     uint16_t m_pc;
     uint16_t m_sp;

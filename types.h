@@ -50,8 +50,43 @@ enum OpCode {
     OpCode_MUL = 0x04,
     OpCode_MLI = 0x05,
     OpCode_DIV = 0x06,
+    OpCode_DVI = 0x07,
+    OpCode_MOD = 0x08,
+    OpCode_MDI = 0x09,
+    OpCode_AND = 0x0A,
+    OpCode_BOR = 0x0B,
+    OpCode_XOR = 0x0C,
+    OpCode_SHR = 0x0D,
+    OpCode_ASR = 0x0E,
+    OpCode_SHL = 0x0F,
+    OpCode_IFB = 0x10,
+    OpCode_IFC = 0x11,
+    OpCode_IFE = 0x12,
+    OpCode_IFN = 0x13,
+    OpCode_IFG = 0x14,
+    OpCode_IFA = 0x15,
+    OpCode_IFL = 0x16,
+    OpCode_IFU = 0x17,
+    OpCode_ADX = 0x1A,
+    OpCode_SBX = 0x1B,
+    OpCode_STI = 0x1E,
+    OpCode_STD = 0x1F,
 
     OpCode_Count,
+};
+
+enum SpecialOpCode {
+    SpecialOpCode_JSR = 0x01,
+    SpecialOpCode_INT = 0x08,
+    SpecialOpCode_IAG = 0x09,
+    SpecialOpCode_IAS = 0x0A,
+    SpecialOpCode_RFI = 0x0B,
+    SpecialOpCode_IAQ = 0x0C,
+    SpecialOpCode_HWN = 0x10,
+    SpecialOpCode_HWQ = 0x11,
+    SpecialOpCode_HWI = 0x12,
+
+    SpecialOpCode_Count,
 };
 
 struct Instruction
@@ -171,7 +206,47 @@ inline string OpCodeToStr(OpCode op){
     case OpCode_MUL: return "MUL";
     case OpCode_MLI: return "MLI";
     case OpCode_DIV: return "DIV";
+    case OpCode_DVI: return "DVI";
+    case OpCode_MOD: return "MOD";
+    case OpCode_MDI: return "MDI";
+    case OpCode_AND: return "AND";
+    case OpCode_BOR: return "BOR";
+    case OpCode_XOR: return "XOR";
+    case OpCode_SHR: return "SHR";
+    case OpCode_ASR: return "ASR";
+    case OpCode_SHL: return "SHL";
+    case OpCode_IFB: return "IFB";
+    case OpCode_IFC: return "IFC";
+    case OpCode_IFE: return "IFE";
+    case OpCode_IFN: return "IFN";
+    case OpCode_IFG: return "IFG";
+    case OpCode_IFA: return "IFA";
+    case OpCode_IFL: return "IFL";
+    case OpCode_IFU: return "IFU";
+    case OpCode_ADX: return "ADX";
+    case OpCode_SBX: return "SBX";
+    case OpCode_STI: return "STI";
+    case OpCode_STD: return "STD";
     default: return "[unknown]";
+    }
+    static_assert(OpCode_Count == 0x20, "Please update this when changing opcodes");
+}
+
+inline string SpecialOpCodeToStr(SpecialOpCode op) {
+    switch (op) {
+    case SpecialOpCode_JSR: return "JSR";
+    case SpecialOpCode_INT: return "INT";
+    case SpecialOpCode_IAG: return "IAG";
+    case SpecialOpCode_IAS: return "IAS";
+    case SpecialOpCode_RFI: return "RFI";
+    case SpecialOpCode_IAQ: return "IAQ";
+    case SpecialOpCode_HWN: return "HWN";
+    case SpecialOpCode_HWQ: return "HWQ";
+    case SpecialOpCode_HWI: return "HWI";
+
+    default:
+        assert(false);
+        return "<Unknown SpecialOpCode>";
     }
 }
 

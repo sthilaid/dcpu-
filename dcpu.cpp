@@ -83,10 +83,12 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
         break;
     }
     case OpCode_MLI:{
-        // todo signed
+        int32_t res = *b_addr * *a_addr;
+        *b_addr = static_cast<uint16_t>(0xFFFF & res);
+        m_ex = static_cast<int16_t>((res>>16) & 0xFFFF);
         break;
     }
-    case OpCode_DIV:{
+    case OpCode_DIV: {
         if (*a_addr == 0) {
             *b_addr = m_ex = 0;
         } else {
@@ -96,9 +98,157 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
         }
         break;
     }
+    case OpCode_DVI: {
+        if (*a_addr == 0) {
+            *b_addr = m_ex = 0;
+        } else {
+            int32_t res = static_cast<int32_t>(*b_addr) / static_cast<int32_t>(*a_addr);
+            *b_addr = static_cast<uint16_t>(0xFFFF & res);
+            m_ex = static_cast<uint16_t>(((*b_addr << 16) / *a_addr) & 0xFFFF);
+        }
+        break;
+    }
+    case OpCode_MOD: {
+        if (*a_addr == 0) {
+            *b_addr = m_ex = 0;
+        } else {
+            *b_addr = *b_addr % *a_addr;
+        }
+        break;
+    }
+    case OpCode_MDI: {
+        if (*a_addr == 0) {
+            *b_addr = m_ex = 0;
+        } else {
+            *b_addr = static_cast<uint16_t>(static_cast<int16_t>(*b_addr) % static_cast<int16_t>(*a_addr));
+        }
+        break;
+    }
+    case OpCode_AND: {
+        *b_addr = *b_addr & *a_addr;
+        break;
+    }
+    case OpCode_BOR: {
+        *b_addr = *b_addr | *a_addr;
+        break;
+    }
+    case OpCode_XOR: {
+        *b_addr = *b_addr ^ *a_addr;
+        break;
+    }
+    case OpCode_SHR: {
+        *b_addr = *b_addr >> *a_addr;
+        m_ex = ((*b_addr<<16) >> *a_addr) & 0xFFFF;
+        break;
+    }
+    case OpCode_ASR: {
+        *b_addr = static_cast<uint16_t>(static_cast<int16_t>(*b_addr) >> *a_addr);
+        m_ex = ((*b_addr<<16) >> *a_addr) & 0xFFFF;
+        break;
+    }
+    case OpCode_SHL:{
+        *b_addr = *b_addr << *a_addr;
+        m_ex = ((*b_addr<<16) >> *a_addr) & 0xFFFF;
+        break;
+    }
+    case OpCode_IFB: {
+        if ((*b_addr & *a_addr) == 0) {
+            Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
+            const uint8_t currentWordCount = currentInstruction.WordCount();
+            Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
+            m_pc += nextInstruction.WordCount();
+        }
+        break;
+    }
+    case OpCode_IFC: {
+        if ((*b_addr & *a_addr) != 0) {
+            Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
+            const uint8_t currentWordCount = currentInstruction.WordCount();
+            Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
+            m_pc += nextInstruction.WordCount();
+        }
+        break;
+    }
+    case OpCode_IFE: {
+        if (*b_addr != *a_addr) {
+            Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
+            const uint8_t currentWordCount = currentInstruction.WordCount();
+            Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
+            m_pc += nextInstruction.WordCount();
+        }
+        break;
+    }
+    case OpCode_IFN: {
+        if (*b_addr == *a_addr) {
+            Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
+            const uint8_t currentWordCount = currentInstruction.WordCount();
+            Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
+            m_pc += nextInstruction.WordCount();
+        }
+        break;
+    }
+    case OpCode_IFG: {
+        if (*b_addr <= *a_addr) {
+            Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
+            const uint8_t currentWordCount = currentInstruction.WordCount();
+            Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
+            m_pc += nextInstruction.WordCount();
+        }
+        break;
+    }
+    case OpCode_IFA: {
+        if (static_cast<int16_t>(*b_addr) <= static_cast<int16_t>(*a_addr)) {
+            Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
+            const uint8_t currentWordCount = currentInstruction.WordCount();
+            Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
+            m_pc += nextInstruction.WordCount();
+        }
+        break;
+    }
+    case OpCode_IFL: {
+        if (*b_addr >= *a_addr) {
+            Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
+            const uint8_t currentWordCount = currentInstruction.WordCount();
+            Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
+            m_pc += nextInstruction.WordCount();
+        }
+        break;
+    }
+    case OpCode_IFU: {
+        if (static_cast<int16_t>(*b_addr) >= static_cast<int16_t>(*a_addr)) {
+            Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
+            const uint8_t currentWordCount = currentInstruction.WordCount();
+            Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
+            m_pc += nextInstruction.WordCount();
+        }
+        break;
+    }
+    case OpCode_ADX: {
+        uint32_t res = *b_addr + *a_addr + m_ex;
+        *b_addr = res & 0xFFFF;
+        m_ex = (res >> 16) & 0xFFFF;
+    }
+    case OpCode_SBX: {
+        uint32_t res = *b_addr - *a_addr + m_ex;
+        *b_addr = res & 0xFFFF;
+        m_ex = res > *b_addr ? 0xFFFF : 0;
+    }
+    case OpCode_STI: {
+        *b_addr = *a_addr;
+        ++m_registers[Registers_I];
+        ++m_registers[Registers_J];
+        break;
+    }
+    case OpCode_STD: {
+        *b_addr = *a_addr;
+        --m_registers[Registers_I];
+        --m_registers[Registers_J];
+        break;
+    }
     default:
         assert(false);
     }
+    static_assert(OpCode_Count == 0x20, "Please update this when changing opcodes");
     return 1;
 }
 

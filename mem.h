@@ -14,8 +14,9 @@ public:
     static constexpr uint32_t TotalBytes = (LastValidAddress+1)*WordByteCount;
 
     Memory();
-    void LoadProgram(const vector<uint16_t>& codebytes);
-    void Dump(uint16_t from=0, uint16_t to=LastValidAddress);
+    uint16_t LoadProgram(const vector<uint16_t>& codebytes);
+    void Dump(uint16_t from=0, uint16_t to=LastValidAddress) const;
+    void DumpNonNull() const;
 
     uint16_t* operator+(uint16_t addr) { return m_Buffer+addr; }
     uint16_t operator[](uint16_t addr) { return m_Buffer[addr]; }

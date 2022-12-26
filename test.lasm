@@ -1,0 +1,8 @@
+(set X 15)
+(shr X 1)
+(add Y X)
+(mul X Y)
+(ifb A A)
+(mul X Y)
+(set (ref X 3) 10)
+(set (ref SP) 66)
