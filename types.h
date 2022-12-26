@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <cassert>
 #include <string>
 using std::string;
 
@@ -36,6 +38,8 @@ enum Value {
     Value_EX = 0x1D,
     Value_Next = 0x1E,
     Value_NextLitteral = 0x1F,
+
+    Value_Count,
 };
 
 enum OpCode {
@@ -46,13 +50,15 @@ enum OpCode {
     OpCode_MUL = 0x04,
     OpCode_MLI = 0x05,
     OpCode_DIV = 0x06,
+
+    OpCode_Count,
 };
 
 struct Instruction
 {
-    OpCode m_opcode = OpCode_Special;
-    Value m_a = Value_Register_A;
-    Value m_b = Value_Register_B;
+    OpCode m_opcode = OpCode_Count;
+    Value m_a = Value_Count;
+    Value m_b = Value_Count;
     uint16_t m_wordA = 0;
     uint16_t m_wordB = 0;
 
@@ -137,6 +143,23 @@ inline string ValueToStr(Value v, bool isA, uint16_t nextword){
     case Value_NextLitteral: return std::to_string(nextword);
     default: return "[unknown]";
     }
+}
+
+inline string toUpcase(const string& str) {
+    string upStr = str;
+    std::transform(upStr.begin(), upStr.end(), upStr.begin(), [](unsigned char c){ return std::toupper(c); });
+    assert(str.size() == upStr.size());
+    return upStr;
+}
+
+inline Value StrToValue(const string& str, bool isA) {
+    string upperSym = toUpcase(str);
+    for(int i=0; i<Value_Count; ++i) {
+        if (upperSym == ValueToStr(static_cast<Value>(i), isA, 0)) {
+            return static_cast<Value>(i);
+        }
+    }
+    return Value_Count;
 }
 
 inline string OpCodeToStr(OpCode op){
