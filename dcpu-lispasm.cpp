@@ -83,18 +83,20 @@ vector<Token> LispAsmParser::Tokenize(std::ifstream& inputStream) {
     vector<Token> tokens;
     string current;
     char c;
+    bool is_commenting = false;
     while (!inputStream.eof()) {
         inputStream.read(&c, 1);
         if (is_newline(c)) {
-        }
-        else if (c == '(' || c == ')') {
+            is_commenting = false;
+        } else if (is_commenting || c == ';') {
+            is_commenting = true;
+        } else if (c == '(' || c == ')') {
             if (current != "") {
                 tokens.push_back(Token{current});
                 current = "";
             }
             tokens.push_back(Token{c});
-        }
-        else if (is_seperator(c)) {
+        } else if (is_seperator(c)) {
             if (current != "") {
                 tokens.push_back(Token{current});
                 current = "";

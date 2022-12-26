@@ -40,7 +40,7 @@ int main(int argc, char** args) {
     while(cpu.GetPC() < lastProgramAddr) {
         cpu.Step(mem);
         cpu.PrintRegisters();
-        //mem.Dump(0xFFF0, 0xFFFF);
+        mem.Dump(0xFFF0, 0xFFFF);
     }
     return 0;
 }
