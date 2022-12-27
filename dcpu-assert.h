@@ -11,6 +11,6 @@
 
 #define dcpu_assert_fmt(isValid, fmt, ...) \
     if (!(isValid)) { \
-        printf(fmt"\n", __VA_ARGS__); \
+        printf("[DCPU ASSERT] " fmt "\n", __VA_ARGS__); \
         assert(isValid); \
     }

@@ -152,7 +152,7 @@ void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& ou
                 }
             }
         }
-        dcpu_assert_fmt(out != Value_Count, "Couldn't match value (%s) to known value type...", val.m_symVal);
+        dcpu_assert_fmt(out != Value_Count, "Couldn't match value (%s) to known value type...", val.m_symVal.c_str());
         break;
     }
     case SExp::Val::SExp: {
@@ -161,7 +161,7 @@ void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& ou
         dcpu_assert_fmt(val.m_sexpVal->m_values[0].m_type == SExp::Val::Symbol,
                         "Expecting first value of val sexp to be token, but found type %d", val.m_sexpVal->m_values[0].m_type);
         dcpu_assert_fmt(toUpcase(val.m_sexpVal->m_values[0].m_symVal) == "REF",
-                        "Expecting REF first sym token, but found: %s", val.m_sexpVal->m_values[0].m_symVal);
+                        "Expecting REF first sym token, but found: %s", val.m_sexpVal->m_values[0].m_symVal.c_str());
 
         outWord = 0;
         

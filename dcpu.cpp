@@ -78,6 +78,7 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
         break;
     }
     case OpCode_MUL:{
+        OpCode_MUL:
         uint32_t res = *b_addr * *a_addr;
         *b_addr = static_cast<uint16_t>(0xFFFF & res);
         m_ex = static_cast<uint16_t>((res>>16) & 0xFFFF);
