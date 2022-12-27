@@ -52,7 +52,7 @@ uint16_t* DCPU::GetAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord) 
 }
 
 uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
-    printf("evaluating mem[0x%04X]: %s\n", m_pc, inst.toStr().c_str());
+    //printf("evaluating mem[0x%04X]: %s\n", m_pc, inst.toStr().c_str());
     uint16_t* a_addr = GetAddrPtr(mem, true, inst.m_a, inst.m_wordA);
     uint16_t* b_addr= GetAddrPtr(mem, false, inst.m_b, inst.m_wordB);
     
@@ -262,6 +262,16 @@ uint32_t DCPU::Step(Memory& mem) {
     if (m_pc == originalPC)
         m_pc += instWordCount; // only increment if it wasn't changed
     return framecount;
+}
+
+uint32_t DCPU::Run(Memory& mem, const vector<uint8_t>& codebytes) {
+    const uint16_t lastProgramAddr = mem.LoadProgram(Decoder::PackBytes(codebytes));
+    uint32_t stepCount = 0;
+    while(m_pc < lastProgramAddr) {
+        Step(mem);
+        ++stepCount;
+    }
+    return stepCount; // fixme, use proper cpu cycles
 }
 
 void DCPU::PrintRegisters() const {

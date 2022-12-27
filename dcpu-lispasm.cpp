@@ -1,5 +1,7 @@
 #include <dcpu-lispasm.h>
 #include <algorithm>
+#include <cstdio>
+#include <fstream>
 
 string SExp::Val::toStr() const {
     switch (m_type) {
@@ -80,13 +82,16 @@ bool LispAsmParser::is_seperator(char c) {
     }
 }
 
-vector<Token> LispAsmParser::Tokenize(std::ifstream& inputStream) {
+vector<Token> LispAsmParser::Tokenize(std::basic_istream<char>& inputStream) {
     vector<Token> tokens;
     string current;
     char c;
     bool is_commenting = false;
-    while (!inputStream.eof()) {
+    while (true) {
         inputStream.read(&c, 1);
+        if (inputStream.eof())
+            break; // need to check eof after the read call
+        
         if (is_newline(c)) {
             is_commenting = false;
         } else if (is_commenting || c == ';') {
@@ -105,7 +110,7 @@ vector<Token> LispAsmParser::Tokenize(std::ifstream& inputStream) {
         } else {
             current += c;
         }
-    }        
+    } 
     return tokens;
 }
 

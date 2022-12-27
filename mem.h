@@ -19,7 +19,7 @@ public:
     void DumpNonNull() const;
 
     uint16_t* operator+(uint16_t addr) { return m_Buffer+addr; }
-    uint16_t operator[](uint16_t addr) { return m_Buffer[addr]; }
+    uint16_t operator[](uint16_t addr) const { return m_Buffer[addr]; }
     
 private:
     uint16_t m_Buffer[LastValidAddress+1];

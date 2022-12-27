@@ -1,4 +1,5 @@
 #include <dcpu-lispasm.h>
+#include <fstream>
 
 int main(int argc, char** args) {
     if (argc != 2) {

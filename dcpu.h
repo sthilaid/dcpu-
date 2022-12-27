@@ -22,10 +22,16 @@ class DCPU {
 
 public:
     DCPU();
+    uint32_t Run(Memory& mem, const vector<uint8_t>& codebytes);
     uint32_t Step(Memory& mem);
+
     void PrintRegisters() const;
 
     uint16_t GetPC() const { return m_pc; }
+    uint16_t GetSP() const { return m_sp; }
+    uint16_t GetEX() const { return m_ex; }
+    uint16_t GetIA() const { return m_ia; }
+    uint16_t GetRegister(Registers r) const { return m_registers[r]; }
 
 private:
     uint16_t* GetAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord);

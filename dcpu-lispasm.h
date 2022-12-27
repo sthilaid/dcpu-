@@ -1,9 +1,8 @@
 #pragma once
 #include <cassert>
+#include <istream>
 #include <vector>
 #include <string>
-#include <cstdio>
-#include <fstream>
 #include <types.h>
 
 using std::string;
@@ -24,11 +23,21 @@ struct Token {
     Token(char c) : Type(c == '(' ? LParen : RParen), NumVal(0), SymVal("") {
         assert(c == '(' || c == ')');
     }
+    bool isNum(char c) const { return c >= '0' && c <= '9'; }
     Token(const string& str) : Type(Symbol), NumVal(0), SymVal(str) {
         assert(!str.empty());
-        if (str[0] >= '0' && str[0] <= '9') {
+        int baseStart = 0;
+        if ((str[0] == '+' || str[0] == '-') && str.size() > 1)
+            baseStart = 1;
+        
+        if (isNum(str[baseStart])) {
             Type = Number;
-            NumVal = std::stoi(str);
+            int base = 10;
+            if (str.size() >= baseStart+3 && str[baseStart] == '0' && str[baseStart+1] == 'x')
+                base = 16;
+            else if (str.size() >= baseStart+2 && str[baseStart] == '0')
+                base = 8;
+            NumVal = std::stoi(str, nullptr, base);
         }
     }
 };
@@ -65,7 +74,7 @@ public:
     static bool is_seperator(char c);
     static bool is_newline(char c) { return c == '\n'; }
 
-    static vector<Token> Tokenize(std::ifstream& inputStream);
+    static vector<Token> Tokenize(std::basic_istream<char>& inputStream);
     static void ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode);
     static void ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, uint16_t& outWord, const vector<LabelEnv>& labels);
     static vector<Instruction> ParseTokens(const vector<Token>& tokens);
