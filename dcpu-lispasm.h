@@ -1,9 +1,9 @@
 #pragma once
-#include <cassert>
 #include <istream>
 #include <vector>
 #include <string>
 #include <types.h>
+#include <dcpu-assert.h>
 
 using std::string;
 using std::vector;
@@ -21,11 +21,11 @@ struct Token {
 
     Token() : Type(LParen), NumVal(0), SymVal("") {}
     Token(char c) : Type(c == '(' ? LParen : RParen), NumVal(0), SymVal("") {
-        assert(c == '(' || c == ')');
+        dcpu_assert(c == '(' || c == ')', "Expecting Parentesis");
     }
     bool isNum(char c) const { return c >= '0' && c <= '9'; }
     Token(const string& str) : Type(Symbol), NumVal(0), SymVal(str) {
-        assert(!str.empty());
+        dcpu_assert(!str.empty(), "Expecting non empty string");
         int baseStart = 0;
         if ((str[0] == '+' || str[0] == '-') && str.size() > 1)
             baseStart = 1;

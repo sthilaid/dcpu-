@@ -8,7 +8,9 @@ string SExp::Val::toStr() const {
     case Number: return std::to_string(m_numVal);
     case Symbol: return m_symVal;
     case SExp: return m_sexpVal->toStr();
-    default: assert(false); return nullptr;
+    default:
+        dcpu_assert(false, "unhandled value type");
+        return nullptr;
     }
 }
 
@@ -31,8 +33,8 @@ vector<SExp*> SExp::ParseSExpressions(const vector<Token>& tokens) {
 }
 
 SExp* SExp::ParseSExp(const vector<Token>& tokens, uint16_t& i) {
-    assert(tokens.size()-i >= 2);
-    assert(tokens[i].Type == Token::LParen);
+    dcpu_assert_fmt(tokens.size()-i >= 2, "Expected more tokens. Left: %d, expecting 2", (tokens.size()-i));
+    dcpu_assert_fmt(tokens[i].Type == Token::LParen, "Expecting LParen as first sexp token, got %d", tokens[i].Type);
     ++i;
         
     SExp* current = new SExp{};
@@ -59,7 +61,7 @@ SExp* SExp::ParseSExp(const vector<Token>& tokens, uint16_t& i) {
         }
         }
     }
-    assert(false);
+    dcpu_assert(false, "Missing tokens to finish sexp");
     return nullptr;
 }
 
@@ -115,7 +117,7 @@ vector<Token> LispAsmParser::Tokenize(std::basic_istream<char>& inputStream) {
 }
 
 void LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode) {
-    assert(val.m_type == SExp::Val::Symbol);
+    dcpu_assert_fmt(val.m_type == SExp::Val::Symbol, "Expecting symbol token for opcode, got %d", val.m_type);
     string upperOp = toUpcase(val.m_symVal);
     for (int i=0; i<OpCode_Count; ++i) {
         if (upperOp == OpCodeToStr(static_cast<OpCode>(i))) {
@@ -123,7 +125,7 @@ void LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode)
             break;
         }
     }
-    assert(outOpcode != OpCode_Count);
+    dcpu_assert_fmt(outOpcode != OpCode_Count, "Couldn't match opcode %s to known opcode", upperOp.c_str());
 }
 
 void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, uint16_t& outWord,
@@ -150,41 +152,51 @@ void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& ou
                 }
             }
         }
-        assert(out != Value_Count);
+        dcpu_assert_fmt(out != Value_Count, "Couldn't match value (%s) to known value type...", val.m_symVal);
         break;
     }
     case SExp::Val::SExp: {
-        assert(val.m_sexpVal->m_values.size() >= 2);
-        assert(val.m_sexpVal->m_values[0].m_type == SExp::Val::Symbol);
-        assert(toUpcase(val.m_sexpVal->m_values[0].m_symVal) == "REF");
+        dcpu_assert_fmt(val.m_sexpVal->m_values.size() >= 2, "Expecting at least 2 values in val sexp, got %d",
+                        val.m_sexpVal->m_values.size());
+        dcpu_assert_fmt(val.m_sexpVal->m_values[0].m_type == SExp::Val::Symbol,
+                        "Expecting first value of val sexp to be token, but found type %d", val.m_sexpVal->m_values[0].m_type);
+        dcpu_assert_fmt(toUpcase(val.m_sexpVal->m_values[0].m_symVal) == "REF",
+                        "Expecting REF first sym token, but found: %s", val.m_sexpVal->m_values[0].m_symVal);
 
         outWord = 0;
-            
-        assert(val.m_sexpVal->m_values[1].m_type == SExp::Val::Symbol);
-        const Value first = StrToValue(val.m_sexpVal->m_values[1].m_symVal, isA);
-        const bool hasOffset = val.m_sexpVal->m_values.size() == 3;
-        if (first <= Value_Register_J) {
-            if (hasOffset) {
-                assert(val.m_sexpVal->m_values[2].m_type == SExp::Val::Number);
-                    
-                out = static_cast<Value>(first | 0x10);
-                outWord = val.m_sexpVal->m_values[2].m_numVal;
-            }
-            else {
-                out = static_cast<Value>(first | 0x08);
-            }
-        } else if (first == Value_SP) {
-            if (hasOffset) {
-                out = Value_Pick;
-                outWord = val.m_sexpVal->m_values[2].m_numVal;
-            } else {
-                out = Value_Peek;
-            }
-        } else if (hasOffset) {
+        
+        if (val.m_sexpVal->m_values[1].m_type == SExp::Val::Number) {
             out = Value_Next;
-            outWord = val.m_sexpVal->m_values[2].m_numVal;
+            outWord = val.m_sexpVal->m_values[1].m_numVal;
         } else {
-            assert(false);
+            dcpu_assert_fmt(val.m_sexpVal->m_values[1].m_type == SExp::Val::Symbol,
+                            "Expecting symbol as first arg to Ref, found %d (%s)",
+                            val.m_sexpVal->m_values[1].m_type, val.m_sexpVal->m_values[2].m_symVal.c_str());
+            
+            const Value first = StrToValue(val.m_sexpVal->m_values[1].m_symVal, isA);
+            const bool hasOffset = val.m_sexpVal->m_values.size() == 3;
+            if (first <= Value_Register_J) {
+                if (hasOffset) {
+                    dcpu_assert_fmt(val.m_sexpVal->m_values[2].m_type == SExp::Val::Number,
+                                    "Expecting ref 2nd arg to be number, found type %d (%s)",
+                                    val.m_sexpVal->m_values[2].m_type, val.m_sexpVal->m_values[2].m_symVal.c_str());
+                    
+                    out = static_cast<Value>(first | 0x10);
+                    outWord = val.m_sexpVal->m_values[2].m_numVal;
+                }
+                else {
+                    out = static_cast<Value>(first | 0x08);
+                }
+            } else if (first == Value_SP) {
+                if (hasOffset) {
+                    out = Value_Pick;
+                    outWord = val.m_sexpVal->m_values[2].m_numVal;
+                } else {
+                    out = Value_Peek;
+                }
+            } else {
+                dcpu_assert(false, "Couldn't parse value sexp properly");
+            }
         }
             
         break;
@@ -211,7 +223,8 @@ vector<Instruction> LispAsmParser::ParseTokens(const vector<Token>& tokens) {
             labels.push_back(LabelEnv{sexp->m_values[1].m_symVal, GetAddr(instructions)});
             continue;
         }
-        assert(sexp->m_values.size() == 3);
+        dcpu_assert_fmt(sexp->m_values.size() == 3, "Expecting a 3 value sexp of form (fun b a), but found only %d values",
+                        sexp->m_values.size());
 
         Instruction& inst = instructions.emplace_back();
         ParseOpCodeFromSexp(sexp->m_values[0], inst.m_opcode);

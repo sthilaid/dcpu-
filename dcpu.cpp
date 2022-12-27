@@ -71,9 +71,10 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
         break;
     }
     case OpCode_SUB:{
-        uint16_t res = *b_addr - *a_addr;
+        uint16_t b = *b_addr;
+        uint16_t res = b - *a_addr;
         *b_addr = res;
-        m_ex = res > *b_addr ? 0xFFFF : 0;
+        m_ex = res > b ? 0xFFFF : 0;
         break;
     }
     case OpCode_MUL:{
@@ -230,9 +231,10 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
         m_ex = (res >> 16) & 0xFFFF;
     }
     case OpCode_SBX: {
-        uint32_t res = *b_addr - *a_addr + m_ex;
-        *b_addr = res & 0xFFFF;
-        m_ex = res > *b_addr ? 0xFFFF : 0;
+        uint16_t b = *b_addr;
+        uint16_t res = b - *a_addr + m_ex;
+        *b_addr = res;
+        m_ex = res > b ? 0xFFFF : 0;
     }
     case OpCode_STI: {
         *b_addr = *a_addr;
