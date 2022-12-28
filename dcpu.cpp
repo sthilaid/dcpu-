@@ -91,12 +91,14 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
         break;
     }
     case OpCode_DIV: {
+        OpCode_DIV:
         if (*a_addr == 0) {
             *b_addr = m_ex = 0;
         } else {
-            uint32_t res = *b_addr / *a_addr;
+            uint16_t b = *b_addr;
+            uint32_t res = b / *a_addr;
             *b_addr = static_cast<uint16_t>(0xFFFF & res);
-            m_ex = static_cast<uint16_t>(((*b_addr << 16) / *a_addr) & 0xFFFF);
+            m_ex = static_cast<uint16_t>(((static_cast<uint32_t>(b) << 16) / *a_addr) & 0xFFFF);
         }
         break;
     }
@@ -131,6 +133,7 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
         break;
     }
     case OpCode_BOR: {
+        OpCode_BOR:
         *b_addr = *b_addr | *a_addr;
         break;
     }
@@ -139,18 +142,22 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
         break;
     }
     case OpCode_SHR: {
-        *b_addr = *b_addr >> *a_addr;
-        m_ex = ((*b_addr<<16) >> *a_addr) & 0xFFFF;
+        const uint16_t b = *b_addr;
+        *b_addr = b >> *a_addr;
+        m_ex = ((static_cast<uint32_t>(b)<<16) >> *a_addr) & 0xFFFF;
         break;
     }
     case OpCode_ASR: {
-        *b_addr = static_cast<uint16_t>(static_cast<int16_t>(*b_addr) >> *a_addr);
-        m_ex = ((*b_addr<<16) >> *a_addr) & 0xFFFF;
+        OpCode_ASR:
+        const uint16_t b = *b_addr;
+        *b_addr = static_cast<uint16_t>(static_cast<int16_t>(b) >> *a_addr);
+        m_ex = ((static_cast<uint32_t>(b)<<16) >> *a_addr) & 0xFFFF;
         break;
     }
     case OpCode_SHL:{
-        *b_addr = *b_addr << *a_addr;
-        m_ex = ((*b_addr<<16) >> *a_addr) & 0xFFFF;
+        const uint16_t b = *b_addr;
+        *b_addr = b << *a_addr;
+        m_ex = ((static_cast<uint32_t>(b)<<16) >> *a_addr) & 0xFFFF;
         break;
     }
     case OpCode_IFB: {
@@ -227,15 +234,18 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
         break;
     }
     case OpCode_ADX: {
+        OpCode_ADX:
         uint32_t res = *b_addr + *a_addr + m_ex;
         *b_addr = res & 0xFFFF;
         m_ex = (res >> 16) & 0xFFFF;
+        break;
     }
     case OpCode_SBX: {
         uint16_t b = *b_addr;
         uint16_t res = b - *a_addr + m_ex;
         *b_addr = res;
         m_ex = res > b ? 0xFFFF : 0;
+        break;
     }
     case OpCode_STI: {
         *b_addr = *a_addr;
