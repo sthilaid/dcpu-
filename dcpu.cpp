@@ -165,7 +165,7 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
             Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
             const uint8_t currentWordCount = currentInstruction.WordCount();
             Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
-            m_pc += nextInstruction.WordCount();
+            m_pc += currentWordCount + nextInstruction.WordCount();
         }
         break;
     }
@@ -174,7 +174,7 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
             Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
             const uint8_t currentWordCount = currentInstruction.WordCount();
             Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
-            m_pc += nextInstruction.WordCount();
+            m_pc += currentWordCount + nextInstruction.WordCount();
         }
         break;
     }
@@ -183,7 +183,7 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
             Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
             const uint8_t currentWordCount = currentInstruction.WordCount();
             Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
-            m_pc += nextInstruction.WordCount();
+            m_pc += currentWordCount + nextInstruction.WordCount();
         }
         break;
     }
@@ -202,7 +202,7 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
             Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
             const uint8_t currentWordCount = currentInstruction.WordCount();
             Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
-            m_pc += nextInstruction.WordCount();
+            m_pc += currentWordCount + nextInstruction.WordCount();
         }
         break;
     }
@@ -211,7 +211,7 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
             Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
             const uint8_t currentWordCount = currentInstruction.WordCount();
             Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
-            m_pc += nextInstruction.WordCount();
+            m_pc += currentWordCount + nextInstruction.WordCount();
         }
         break;
     }
@@ -220,7 +220,7 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
             Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
             const uint8_t currentWordCount = currentInstruction.WordCount();
             Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
-            m_pc += nextInstruction.WordCount();
+            m_pc += currentWordCount + nextInstruction.WordCount();
         }
         break;
     }
@@ -229,7 +229,7 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
             Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
             const uint8_t currentWordCount = currentInstruction.WordCount();
             Instruction nextInstruction = Decoder::Decode(mem+m_pc+currentWordCount, mem.LastValidAddress-m_pc-currentWordCount);
-            m_pc += nextInstruction.WordCount();
+            m_pc += currentWordCount + nextInstruction.WordCount();
         }
         break;
     }

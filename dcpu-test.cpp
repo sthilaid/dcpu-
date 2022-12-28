@@ -430,5 +430,30 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_J), 1)
                    );
 
+    CreateTestCase("LABELS",
+                   "(set x 1)"
+                   "(set y 3)"
+                   "(label loop)"
+                   "(ife y 0)"
+                   "(set pc done)"
+                   "(mul x 3)"
+                   "(sub y 1)"
+                   "(set pc loop)"
+                   "(label done)"
+                   ,
+                   VerifyEqual(cpu.GetRegister(Registers_X), 27)
+                   VerifyEqual(cpu.GetRegister(Registers_Y), 0)
+                   );
+
+    // CreateTestCase("JSR",
+    //                "(set j 2)"
+    //                "(std a 0xA)"
+    //                ,
+    //                VerifyEqual(cpu.GetRegister(Registers_A), 0xA)
+    //                VerifyEqual(cpu.GetRegister(Registers_I), 0xFFFF)
+    //                VerifyEqual(cpu.GetRegister(Registers_J), 1)
+    //                );
+
+    printf("All Tests Completed Successfully\n");
     return 0;
 }

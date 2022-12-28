@@ -116,20 +116,28 @@ vector<Token> LispAsmParser::Tokenize(std::basic_istream<char>& inputStream) {
     return tokens;
 }
 
-void LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode) {
+bool LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode, uint8_t& outSpecialOp) {
     dcpu_assert_fmt(val.m_type == SExp::Val::Symbol, "Expecting symbol token for opcode, got %d", val.m_type);
     string upperOp = toUpcase(val.m_symVal);
+    for (int i=0; i<SpecialOpCode_Count; ++i) {
+        if (upperOp == SpecialOpCodeToStr(static_cast<SpecialOpCode>(i))) {
+            outOpcode = OpCode_Special;
+            outSpecialOp = static_cast<SpecialOpCode>(i);
+            return true;
+        }
+    }
     for (int i=0; i<OpCode_Count; ++i) {
         if (upperOp == OpCodeToStr(static_cast<OpCode>(i))) {
             outOpcode = static_cast<OpCode>(i);
-            break;
+            return false;
         }
     }
     dcpu_assert_fmt(outOpcode != OpCode_Count, "Couldn't match opcode %s to known opcode", upperOp.c_str());
+    return false;
 }
 
 void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, uint16_t& outWord,
-                                       const vector<LabelEnv>& labels) {
+                                       vector<LabelRef>& labelRefs) {
     switch (val.m_type) {
     case SExp::Val::Number: {
         // todo, check when isA for embedded number
@@ -138,21 +146,18 @@ void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& ou
         break;
     }
     case SExp::Val::Symbol: {
-        auto findIt = std::find_if(labels.begin(), labels.end(), [&val](const LabelEnv& lab) { return val.m_symVal == lab.m_label; });
-        if (findIt != labels.end()) {
-            out = Value_NextLitteral;
-            outWord = findIt->m_addr;
-        } else {
-            string upperSym = toUpcase(val.m_symVal);
-            for(int i=0; i<Value_Count; ++i) {
-                if (upperSym == ValueToStr(static_cast<Value>(i), isA, 0)) {
-                    out = static_cast<Value>(i);
-                    outWord = 0;
-                    break;
-                }
+        string upperSym = toUpcase(val.m_symVal);
+        for(int i=0; i<Value_Count; ++i) {
+            if (upperSym == ValueToStr(static_cast<Value>(i), isA, 0)) {
+                out = static_cast<Value>(i);
+                outWord = 0;
+                break;
             }
         }
-        dcpu_assert_fmt(out != Value_Count, "Couldn't match value (%s) to known value type...", val.m_symVal.c_str());
+        if (out == Value_Count) {
+            out = Value_NextLitteral;
+            labelRefs.push_back(LabelRef{upperSym, &outWord});
+        }
         break;
     }
     case SExp::Val::SExp: {
@@ -213,25 +218,50 @@ uint16_t GetAddr(const vector<Instruction>& instructions) {
 
 vector<Instruction> LispAsmParser::ParseTokens(const vector<Token>& tokens) {
     vector<LabelEnv> labels;
+    vector<LabelRef> labelRefs;
     vector<Instruction> instructions;
+    instructions.reserve(tokens.size()); // way too much but ensures stable memory, for label refs
     vector<SExp*> sexpressions = SExp::ParseSExpressions(tokens);
     for (SExp* sexp : sexpressions) {
         if (sexp->m_values.size() == 2
             && sexp->m_values[0].m_type == SExp::Val::Symbol
             && toUpcase(sexp->m_values[0].m_symVal) == "LABEL"
             && sexp->m_values[1].m_type == SExp::Val::Symbol) {
-            labels.push_back(LabelEnv{sexp->m_values[1].m_symVal, GetAddr(instructions)});
+            string upperLabel = toUpcase(sexp->m_values[1].m_symVal);
+            labels.push_back(LabelEnv{upperLabel, GetAddr(instructions)});
             continue;
         }
-        dcpu_assert_fmt(sexp->m_values.size() == 3, "Expecting a 3 value sexp of form (fun b a), but found only %d values",
+        dcpu_assert_fmt(sexp->m_values.size() >= 2,
+                        "Expecting form (specialop a) / (op b a), but found only %d values",
                         sexp->m_values.size());
 
+        uint8_t specialOp = 0;
         Instruction& inst = instructions.emplace_back();
-        ParseOpCodeFromSexp(sexp->m_values[0], inst.m_opcode);
-        ParseValueFromSexp(sexp->m_values[1], false, inst.m_b, inst.m_wordB, labels);
-        ParseValueFromSexp(sexp->m_values[2], true, inst.m_a, inst.m_wordA, labels);
+        const bool isSpecialOp = ParseOpCodeFromSexp(sexp->m_values[0], inst.m_opcode, specialOp);
+        if (isSpecialOp) {
+            dcpu_assert_fmt(sexp->m_values.size() == 2,
+                            "Expecting a 2 value sexp of form (specialop a), but found only %d values",
+                            sexp->m_values.size());
+            ParseValueFromSexp(sexp->m_values[1], true, inst.m_a, inst.m_wordA, labelRefs);
+        } else {
+            dcpu_assert_fmt(sexp->m_values.size() == 3,
+                            "Expecting a 3 value sexp of form (op b a), but found only %d values",
+                            sexp->m_values.size());
+            ParseValueFromSexp(sexp->m_values[1], false, inst.m_b, inst.m_wordB, labelRefs);
+            ParseValueFromSexp(sexp->m_values[2], true, inst.m_a, inst.m_wordA, labelRefs);
+        }
 
         SExp::Delete(sexp);
+    }
+
+ AssignLabelRefs:
+    for (LabelRef& ref : labelRefs) {
+        auto it = std::find_if(labels.begin(), labels.end(), [&ref](const LabelEnv& label) { return ref.m_label == label.m_label; });
+        if (it != labels.end()) {
+            *ref.m_wordPtr = it->m_addr;
+        } else {
+            dcpu_assert_fmt(false, "Couldn't find label %s in label environment.", ref.m_label.c_str());
+        }
     }
         
     return instructions;

@@ -124,7 +124,7 @@ inline bool isMultibyteValue(Value v) {
 }
 
 inline Instruction::Instruction()
-    : Instruction{OpCode_Special, Value_Register_A, Value_Register_A, 0, 0}
+    : Instruction{OpCode_Count, Value_Count, Value_Count, 0, 0}
 {    
 }
 
@@ -245,7 +245,6 @@ inline string SpecialOpCodeToStr(SpecialOpCode op) {
     case SpecialOpCode_HWI: return "HWI";
 
     default:
-        assert(false);
         return "<Unknown SpecialOpCode>";
     }
 }

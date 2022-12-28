@@ -63,6 +63,12 @@ struct SExp {
     string toStr() const;
 };
 
+struct LabelRef {
+    string m_label="";
+    uint16_t* m_wordPtr;
+    LabelRef(const string& label, uint16_t* wordPtr) : m_label(label), m_wordPtr(wordPtr) {}
+};
+
 struct LabelEnv {
     string m_label="";
     uint16_t m_addr=0;
@@ -75,8 +81,8 @@ public:
     static bool is_newline(char c) { return c == '\n'; }
 
     static vector<Token> Tokenize(std::basic_istream<char>& inputStream);
-    static void ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode);
-    static void ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, uint16_t& outWord, const vector<LabelEnv>& labels);
+    static bool ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode, uint8_t& outSpecialOp);
+    static void ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, uint16_t& outWord, vector<LabelRef>& foundLabels);
     static vector<Instruction> ParseTokens(const vector<Token>& tokens);
     static vector<Instruction> ParseLispAsm(char* filename);
 };
