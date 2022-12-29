@@ -2,7 +2,7 @@
 #include <istream>
 #include <vector>
 #include <string>
-#include <types.h>
+#include <dcpu-types.h>
 #include <dcpu-assert.h>
 
 using std::string;

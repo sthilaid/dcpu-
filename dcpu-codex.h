@@ -2,12 +2,12 @@
 #include <cstdint>
 #include <vector>
 #include <string>
-#include <types.h>
+#include <dcpu-types.h>
 
 using std::string;
 using std::vector;
 
-class Decoder
+class Codex
 {
 public:
     static string ValueToStr(Value v, bool isA, uint16_t nextword);

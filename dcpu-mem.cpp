@@ -1,4 +1,4 @@
-#include <mem.h>
+#include <dcpu-mem.h>
 
 Memory::Memory() {
     std::memset(this, 0, TotalBytes);

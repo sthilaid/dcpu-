@@ -1,5 +1,5 @@
 #include <cassert>
-#include <decoder.h>
+#include <dcpu-codex.h>
 
 #define NDEBUG
 
@@ -20,7 +20,7 @@ uint16_t from8BitLittleEndian(const vector<uint8_t>& buffer, uint16_t& i) {
     return (bigEnd << 8) | littleEnd;
 }
 
-vector<uint16_t> Decoder::Encode(const vector<Instruction>& instructions){
+vector<uint16_t> Codex::Encode(const vector<Instruction>& instructions){
     vector<uint16_t> codeBuffer;
     for (const Instruction& inst : instructions){
         const uint16_t opcode = inst.m_opcode;
@@ -40,7 +40,7 @@ vector<uint16_t> Decoder::Encode(const vector<Instruction>& instructions){
     return codeBuffer;
 }
 
-vector<uint8_t> Decoder::UnpackBytes(const vector<uint16_t>& buffer){
+vector<uint8_t> Codex::UnpackBytes(const vector<uint16_t>& buffer){
     vector<uint8_t> unpackedBuffer;
     for (uint16_t i=0; i<buffer.size(); ++i) {
         pushTo8BitLittleEndian(buffer[i], unpackedBuffer);
@@ -48,7 +48,7 @@ vector<uint8_t> Decoder::UnpackBytes(const vector<uint16_t>& buffer){
     return unpackedBuffer;
 }
 
-vector<uint16_t> Decoder::PackBytes(const vector<uint8_t>& buffer){
+vector<uint16_t> Codex::PackBytes(const vector<uint8_t>& buffer){
     vector<uint16_t> packedBuffer;
     for (uint16_t i=0; i<buffer.size()-1;) {
         packedBuffer.push_back(from8BitLittleEndian(buffer, i));
@@ -56,7 +56,7 @@ vector<uint16_t> Decoder::PackBytes(const vector<uint8_t>& buffer){
     return packedBuffer;
 }
 
-Instruction Decoder::Decode(const uint16_t* codebytePtr, uint32_t maxlen){
+Instruction Codex::Decode(const uint16_t* codebytePtr, uint32_t maxlen){
     assert(codebytePtr != nullptr);
     
     uint8_t instructionSize = 1;
@@ -81,7 +81,7 @@ Instruction Decoder::Decode(const uint16_t* codebytePtr, uint32_t maxlen){
     return inst;
 }
 
-vector<Instruction> Decoder::Decode(const vector<uint16_t>& buffer){
+vector<Instruction> Codex::Decode(const vector<uint16_t>& buffer){
     vector<Instruction> instructions;
     for (uint16_t i=0; i<buffer.size();) {
         uint16_t raw = buffer[i];

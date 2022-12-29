@@ -1,8 +1,8 @@
 #include <cassert>
 #include <dcpu.h>
-#include <mem.h>
+#include <dcpu-mem.h>
 #include <dcpu-lispasm.h>
-#include <decoder.h>
+#include <dcpu-codex.h>
 #include <sstream>
 #include <cstdlib>
 
@@ -56,7 +56,7 @@ bool TestCase::TryTest() const {
     std::basic_stringstream sourceStream{m_lasmSource};
     vector<Token> tokens = LispAsmParser::Tokenize(sourceStream);
     vector<Instruction> instructions = LispAsmParser::ParseTokens(tokens);
-    vector<uint8_t> codebytes = Decoder::UnpackBytes(Decoder::Encode(instructions));
+    vector<uint8_t> codebytes = Codex::UnpackBytes(Codex::Encode(instructions));
 
     int test_success = 0;
     DCPU cpu;

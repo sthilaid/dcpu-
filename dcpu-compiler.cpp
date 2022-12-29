@@ -1,5 +1,5 @@
 #include <cstdio>
-#include <decoder.h>
+#include <dcpu-codex.h>
 #include <dcpu-lispasm.h>
 #include <vector>
 #include <fstream>
@@ -19,19 +19,19 @@ void testEncodeDecode() {
         printf("%s\n", i.toStr().c_str());
     }
     
-    vector<uint16_t> binary = Decoder::Encode(instructions);
+    vector<uint16_t> binary = Codex::Encode(instructions);
     for (uint16_t b : binary) {
         printf("0x%04X, ", b);
     }
     printf("\n");
 
-    vector<uint8_t> unpackedBinary = Decoder::UnpackBytes(binary);
+    vector<uint8_t> unpackedBinary = Codex::UnpackBytes(binary);
     for (uint8_t b : unpackedBinary) {
         printf("0x%02X, ", b);
     }
     printf("\n");
 
-    vector<Instruction> instructionsFromBinary = Decoder::Decode(binary);
+    vector<Instruction> instructionsFromBinary = Codex::Decode(binary);
     for (const Instruction& i : instructionsFromBinary){
         printf("%s\n", i.toStr().c_str());
     }
@@ -50,8 +50,8 @@ int main(int argc, char** args) {
 
     printf("comiling instructions:\n");
     for(const Instruction& i : instructions) printf("  %s\n", i.toStr().c_str());
-    vector<uint16_t> codebytes = Decoder::Encode(instructions);
-    vector<uint8_t> rawdata = Decoder::UnpackBytes(codebytes);
+    vector<uint16_t> codebytes = Codex::Encode(instructions);
+    vector<uint8_t> rawdata = Codex::UnpackBytes(codebytes);
     for (uint8_t d : rawdata) {
         binFileStream.write(reinterpret_cast<char*>(&d), 1);
     }

@@ -1,8 +1,8 @@
 #include <dcpu.h>
 #include <dcpu-assert.h>
-#include <decoder.h>
+#include <dcpu-codex.h>
 #include <cassert>
-#include <mem.h>
+#include <dcpu-mem.h>
 #include <dcpu-hardware.h>
 
 DCPU::DCPU()
@@ -67,13 +67,13 @@ uint16_t* DCPU::GetAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord, 
 }
 
 uint16_t GetNextCodeAddress(Memory& mem, uint16_t pc) {
-    Instruction currentInstruction = Decoder::Decode(mem+pc, mem.LastValidAddress-pc);
+    Instruction currentInstruction = Codex::Decode(mem+pc, mem.LastValidAddress-pc);
     const uint8_t currentWordCount = currentInstruction.WordCount();
     return pc + currentWordCount;
 }
 
 uint16_t GetNextCodeAddressSkipIF(Memory& mem, uint16_t pc, bool& skippedExtra) {
-    Instruction currentInstruction = Decoder::Decode(mem+pc, mem.LastValidAddress-pc);
+    Instruction currentInstruction = Codex::Decode(mem+pc, mem.LastValidAddress-pc);
     const uint8_t currentWordCount = currentInstruction.WordCount();
     uint16_t nextPC = pc + currentWordCount;
     skippedExtra = false;
@@ -87,7 +87,7 @@ uint16_t GetNextCodeAddressSkipIF(Memory& mem, uint16_t pc, bool& skippedExtra) 
     case OpCode_IFA:
     case OpCode_IFL:
     case OpCode_IFU:
-        Instruction nextInstruction = Decoder::Decode(mem+pc, mem.LastValidAddress-pc);
+        Instruction nextInstruction = Codex::Decode(mem+pc, mem.LastValidAddress-pc);
         const uint8_t nextWordCount = currentInstruction.WordCount();
         nextPC += nextWordCount;
         skippedExtra = true;
@@ -441,7 +441,7 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
 
 void DCPU::Step(Memory& mem) {
     uint16_t* codebytePtr = mem+m_pc;
-    Instruction nextInstruction = Decoder::Decode(codebytePtr, mem.LastValidAddress-m_pc);
+    Instruction nextInstruction = Codex::Decode(codebytePtr, mem.LastValidAddress-m_pc);
     const uint16_t originalPC = m_pc;
     const uint8_t cycles = Eval(mem, nextInstruction);
     if (m_pc == originalPC)
@@ -454,7 +454,7 @@ void DCPU::Step(Memory& mem) {
 }
 
 uint32_t DCPU::Run(Memory& mem, const vector<uint8_t>& codebytes) {
-    const uint16_t lastProgramAddr = mem.LoadProgram(Decoder::PackBytes(codebytes));
+    const uint16_t lastProgramAddr = mem.LoadProgram(Codex::PackBytes(codebytes));
     uint32_t stepCount = 0;
     while(m_pc < lastProgramAddr) {
         Step(mem);

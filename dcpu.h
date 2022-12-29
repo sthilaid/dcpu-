@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <queue>
-#include <types.h>
+#include <dcpu-types.h>
 #include <cstdint>
 using std::vector;
 using std::queue;

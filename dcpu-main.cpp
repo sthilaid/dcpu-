@@ -1,14 +1,14 @@
 #include <dcpu.h>
-#include <mem.h>
-#include <decoder.h>
+#include <dcpu-mem.h>
+#include <dcpu-codex.h>
 #include <vector>
 #include <fstream>
 
 using std::vector;
 
 uint16_t load_program(Memory& mem, const vector<uint8_t>& codebytes) {
-    vector<uint16_t> codeWords = Decoder::PackBytes(codebytes);
-    vector<Instruction> instructions = Decoder::Decode(codeWords);
+    vector<uint16_t> codeWords = Codex::PackBytes(codebytes);
+    vector<Instruction> instructions = Codex::Decode(codeWords);
     // printf("loading into memory:\n");
     // int b=0;
     // for (const Instruction& i : instructions) {
