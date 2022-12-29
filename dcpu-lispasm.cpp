@@ -141,9 +141,17 @@ void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& ou
                                        vector<LabelRef>& labelRefs) {
     switch (val.m_type) {
     case SExp::Val::Number: {
-        // todo, check when isA for embedded number
-        out = Value_NextLitteral;
-        outWord = val.m_numVal;
+        if (isA && (val.m_numVal == 0xFFFF || val.m_numVal <= 30)) {
+            if (val.m_numVal == 0xFFFF) {
+                out = static_cast<Value>(0x3F);
+            } else {
+                out = static_cast<Value>(0x20 + val.m_numVal);
+            }
+            outWord = 0;
+        } else {
+            out = Value_NextLitteral;
+            outWord = val.m_numVal;
+        }
         break;
     }
     case SExp::Val::Symbol: {

@@ -1,5 +1,6 @@
 #include <cassert>
 #include <dcpu.h>
+#include <mem.h>
 #include <dcpu-lispasm.h>
 #include <decoder.h>
 #include <sstream>
@@ -9,8 +10,8 @@
     {                                                                   \
         TestCase t(name, source);                                       \
         __VA_ARGS__                                                     \
-        bool shouldRun = singleTestName == nullptr || std::strcmp(singleTestName, t.m_testName) == 0;  \
-        if (shouldRun && !t.TryTest()) return -1;                       \
+        bool shouldRun = !shouldStop && (singleTestName == nullptr || std::strcmp(singleTestName, t.m_testName) == 0);  \
+        if (shouldRun && !t.TryTest()) shouldStop = true;               \
     }
 
 #define Verify(verif) t.AddVerifier([](const DCPU& cpu, const Memory& mem) { return verif; }, \
@@ -74,11 +75,12 @@ bool TestCase::TryTest() const {
     printf("Test %s %d/%d [%s]\n", m_testName, test_success, m_verifiers.size(),
            test_success == m_verifiers.size() ? "SUCCESS" : "FAILURE");
 
-    return test_success;
+    return test_success == m_verifiers.size();
 }
 
 int main(int argc, char** argv) {
     const char* singleTestName = nullptr;
+    bool shouldStop = false;
     if (argc > 1) {
         singleTestName = argv[1];
     }
@@ -106,6 +108,7 @@ int main(int argc, char** argv) {
                    "(add x 1)",
                    VerifyEqual(cpu.GetEX(), 1)
                    VerifyEqual(cpu.GetRegister(Registers_A), 0)
+                   VerifyEqual(cpu.GetCycles(), 3)
                    );
 
     CreateTestCase("SUB",
@@ -120,6 +123,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_X), static_cast<uint16_t>(-1))
                    VerifyEqual(cpu.GetRegister(Registers_Y), 9)
                    VerifyEqual(mem[555], 9)
+                   VerifyEqual(cpu.GetCycles(), 10)
                    );
 
     CreateTestCase("MUL",
@@ -132,6 +136,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_X), 81)
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0x8000)
                    VerifyEqual(cpu.GetEX(), 0x1)
+                   VerifyEqual(cpu.GetCycles(), 9)
                    );
 
     CreateTestCase("MLU",
@@ -141,6 +146,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_X), 1)
                    VerifyEqual(cpu.GetRegister(Registers_Y), static_cast<uint16_t>(-1))
+                   VerifyEqual(cpu.GetCycles(), 4)
                    );
 
     CreateTestCase("DIV",
@@ -156,6 +162,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0)
                    VerifyEqual(cpu.GetRegister(Registers_I), 0)
                    VerifyEqual(cpu.GetEX(), 64)
+                   VerifyEqual(cpu.GetCycles(), 14)
                    );
 
     CreateTestCase("MOD",
@@ -166,6 +173,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_X), 2)
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0)
+                   VerifyEqual(cpu.GetCycles(), 8)
                    );
 
     CreateTestCase("MDI",
@@ -180,6 +188,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_X), static_cast<uint16_t>(-2))
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0)
                    VerifyEqual(cpu.GetRegister(Registers_I), 2)
+                   VerifyEqual(cpu.GetCycles(), 14)
                    );
 
     CreateTestCase("AND",
@@ -190,6 +199,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_X), 0xA0);
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0)
+                   VerifyEqual(cpu.GetCycles(), 6)
                    );
 
     CreateTestCase("BOR",
@@ -200,6 +210,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_X), 0xFF);
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0xFF)
+                   VerifyEqual(cpu.GetCycles(), 7)
                    );
 
     CreateTestCase("XOR",
@@ -210,6 +221,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_X), 0xFF);
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0xAA)
+                   VerifyEqual(cpu.GetCycles(), 7)
                    );
 
     CreateTestCase("SHR",
@@ -224,6 +236,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0x2A)
                    VerifyEqual(cpu.GetRegister(Registers_I), 0)
                    VerifyEqual(cpu.GetEX(), 0x8000)
+                   VerifyEqual(cpu.GetCycles(), 8)
                    );
 
     CreateTestCase("ASR",
@@ -238,6 +251,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0xC000)
                    VerifyEqual(cpu.GetRegister(Registers_I), 1)
                    VerifyEqual(cpu.GetEX(), 0xE000)
+                   VerifyEqual(cpu.GetCycles(), 7)
                    );
 
     CreateTestCase("SHL",
@@ -252,6 +266,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0)
                    VerifyEqual(cpu.GetRegister(Registers_I), 0x78)
                    VerifyEqual(cpu.GetEX(), 0xE000)
+                   VerifyEqual(cpu.GetCycles(), 7)
                    );
 
     CreateTestCase("IFB",
@@ -266,6 +281,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_I), 0)
                    VerifyEqual(cpu.GetRegister(Registers_J), 1)
+                   VerifyEqual(cpu.GetCycles(), 10)
                    );
 
     CreateTestCase("IFC",
@@ -280,6 +296,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_I), 1)
                    VerifyEqual(cpu.GetRegister(Registers_J), 0)
+                   VerifyEqual(cpu.GetCycles(), 10)
                    );
 
     CreateTestCase("IFE",
@@ -294,6 +311,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_I), 0)
                    VerifyEqual(cpu.GetRegister(Registers_J), 1)
+                   VerifyEqual(cpu.GetCycles(), 10)
                    );
 
     CreateTestCase("IFN",
@@ -308,6 +326,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_I), 1)
                    VerifyEqual(cpu.GetRegister(Registers_J), 0)
+                   VerifyEqual(cpu.GetCycles(), 10)
                    );
 
     CreateTestCase("IFG",
@@ -332,6 +351,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_J), 0)
                    VerifyEqual(cpu.GetRegister(Registers_A), 1)
                    VerifyEqual(cpu.GetRegister(Registers_B), 0)
+                   VerifyEqual(cpu.GetCycles(), 20)
                    );
 
     CreateTestCase("IFA",
@@ -356,6 +376,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_J), 0)
                    VerifyEqual(cpu.GetRegister(Registers_A), 1)
                    VerifyEqual(cpu.GetRegister(Registers_B), 1)
+                   VerifyEqual(cpu.GetCycles(), 20)
                    );
 
     CreateTestCase("IFL",
@@ -380,6 +401,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_J), 0)
                    VerifyEqual(cpu.GetRegister(Registers_A), 0)
                    VerifyEqual(cpu.GetRegister(Registers_B), 0)
+                   VerifyEqual(cpu.GetCycles(), 20)
                    );
 
     CreateTestCase("IFU",
@@ -404,6 +426,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_J), 0)
                    VerifyEqual(cpu.GetRegister(Registers_A), 0)
                    VerifyEqual(cpu.GetRegister(Registers_B), 1)
+                   VerifyEqual(cpu.GetCycles(), 20)
                    );
 
     CreateTestCase("ADX",
@@ -413,6 +436,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_I), 1)
                    VerifyEqual(cpu.GetRegister(Registers_J), 4)
+                   VerifyEqual(cpu.GetCycles(), 7)
                    );
 
     CreateTestCase("SBX",
@@ -422,6 +446,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_I), static_cast<uint16_t>(-1))
                    VerifyEqual(cpu.GetRegister(Registers_J), static_cast<uint16_t>(-4))
+                   VerifyEqual(cpu.GetCycles(), 7)
                    );
 
     CreateTestCase("STI",
@@ -431,6 +456,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_A), 0xA)
                    VerifyEqual(cpu.GetRegister(Registers_I), 1)
                    VerifyEqual(cpu.GetRegister(Registers_J), 3)
+                   VerifyEqual(cpu.GetCycles(), 3)
                    );
 
     CreateTestCase("STD",
@@ -440,6 +466,7 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_A), 0xA)
                    VerifyEqual(cpu.GetRegister(Registers_I), 0xFFFF)
                    VerifyEqual(cpu.GetRegister(Registers_J), 1)
+                   VerifyEqual(cpu.GetCycles(), 3)
                    );
 
     CreateTestCase("LABELS",
@@ -455,6 +482,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_X), 27)
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0)
+                   VerifyEqual(cpu.GetCycles(), 33)
                    );
 
     CreateTestCase("JSR",
@@ -475,8 +503,10 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.GetRegister(Registers_X), 625)
                    VerifyEqual(cpu.GetRegister(Registers_Y), 21)
+                   VerifyEqual(cpu.GetCycles(), 27)
                    );
 
-    printf("All Tests Completed Successfully\n");
+    if (!shouldStop)
+        printf("All Tests Completed Successfully\n");
     return 0;
 }
