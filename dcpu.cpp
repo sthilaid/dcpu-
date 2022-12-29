@@ -12,6 +12,7 @@ DCPU::DCPU()
 }
 
 uint16_t* DCPU::GetAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord) {
+    const int16_t signedOffset = static_cast<int16_t>(extraWord);
     switch (v) {
     case Value_Register_A: return &m_registers[Registers_A];
     case Value_Register_B: return &m_registers[Registers_B];
@@ -29,21 +30,21 @@ uint16_t* DCPU::GetAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord) 
     case Value_Register_Ref_Z: return mem+m_registers[Registers_Z];
     case Value_Register_Ref_I: return mem+m_registers[Registers_I];
     case Value_Register_Ref_J: return mem+m_registers[Registers_J];
-    case Value_Register_RefNext_A: return mem+(m_registers[Registers_A] + extraWord);
-    case Value_Register_RefNext_B: return mem+(m_registers[Registers_B] + extraWord);
-    case Value_Register_RefNext_C: return mem+(m_registers[Registers_C] + extraWord);
-    case Value_Register_RefNext_X: return mem+(m_registers[Registers_X] + extraWord);
-    case Value_Register_RefNext_Y: return mem+(m_registers[Registers_Y] + extraWord);
-    case Value_Register_RefNext_Z: return mem+(m_registers[Registers_Z] + extraWord);
-    case Value_Register_RefNext_I: return mem+(m_registers[Registers_I] + extraWord);
-    case Value_Register_RefNext_J: return mem+(m_registers[Registers_J] + extraWord);
+    case Value_Register_RefNext_A: return mem+(m_registers[Registers_A] + signedOffset);
+    case Value_Register_RefNext_B: return mem+(m_registers[Registers_B] + signedOffset);
+    case Value_Register_RefNext_C: return mem+(m_registers[Registers_C] + signedOffset);
+    case Value_Register_RefNext_X: return mem+(m_registers[Registers_X] + signedOffset);
+    case Value_Register_RefNext_Y: return mem+(m_registers[Registers_Y] + signedOffset);
+    case Value_Register_RefNext_Z: return mem+(m_registers[Registers_Z] + signedOffset);
+    case Value_Register_RefNext_I: return mem+(m_registers[Registers_I] + signedOffset);
+    case Value_Register_RefNext_J: return mem+(m_registers[Registers_J] + signedOffset);
     case Value_PushPop: return isA ? mem + (m_sp++) : mem + (--m_sp);
     case Value_Peek: return mem + m_sp;
-    case Value_Pick: return mem + (m_sp + extraWord);
+    case Value_Pick: return mem + (m_sp + signedOffset);
     case Value_SP: return &m_sp;
     case Value_PC: return &m_pc;
     case Value_EX: return &m_ex;
-    case Value_Next: return mem + extraWord;
+    case Value_Next: return mem + signedOffset;
     case Value_NextLitteral: return &extraWord;
     default:
         assert(false);
@@ -58,6 +59,41 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
     
     switch (inst.m_opcode) {
     case OpCode_Special:{
+        OpCode_Special:
+        SpecialOpCode specialOp = static_cast<SpecialOpCode>(inst.m_b);
+        switch (specialOp) {
+        case SpecialOpCode_JSR: {
+            Instruction currentInstruction = Decoder::Decode(mem+m_pc, mem.LastValidAddress-m_pc);
+            const uint8_t currentWordCount = currentInstruction.WordCount();
+            *(mem + (--m_sp)) = m_pc + currentWordCount;
+            m_pc = *a_addr;
+            break;
+        }
+        case SpecialOpCode_INT: {
+            break;
+        }
+        case SpecialOpCode_IAG: {
+            break;
+        }
+        case SpecialOpCode_IAS: {
+            break;
+        }
+        case SpecialOpCode_RFI: {
+            break;
+        }
+        case SpecialOpCode_IAQ: {
+            break;
+        }
+        case SpecialOpCode_HWN: {
+            break;
+        }
+        case SpecialOpCode_HWQ: {
+            break;
+        }
+        case SpecialOpCode_HWI: {
+            break;
+        }
+        }
         break;
     }
     case OpCode_SET:{

@@ -28,16 +28,13 @@ vector<uint16_t> Decoder::Encode(const vector<Instruction>& instructions){
         const uint16_t b = inst.m_b;
         const uint16_t binaryInstruction = (a << 0xA) | (b << 0x5) | opcode;
         codeBuffer.push_back(binaryInstruction);
-        // printf(" %04X\n", binaryInstruction);
 
         if (isMultibyteValue(inst.m_a)) {
             codeBuffer.push_back(inst.m_wordA);
-            // printf(" a-> %04X\n", inst.m_wordA);
         }
 
-        if (isMultibyteValue(inst.m_b)) {
+        if (opcode != OpCode_Special && isMultibyteValue(inst.m_b)) {
             codeBuffer.push_back(inst.m_wordB);
-            // printf(" b-> %04X\n", inst.m_wordB);
         }
     }
     return codeBuffer;

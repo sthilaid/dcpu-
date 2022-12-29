@@ -116,11 +116,12 @@ vector<Token> LispAsmParser::Tokenize(std::basic_istream<char>& inputStream) {
     return tokens;
 }
 
-bool LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode, uint8_t& outSpecialOp) {
+bool LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode, uint16_t& outSpecialOp) {
     dcpu_assert_fmt(val.m_type == SExp::Val::Symbol, "Expecting symbol token for opcode, got %d", val.m_type);
     string upperOp = toUpcase(val.m_symVal);
     for (int i=0; i<SpecialOpCode_Count; ++i) {
         if (upperOp == SpecialOpCodeToStr(static_cast<SpecialOpCode>(i))) {
+        SpecialOp:
             outOpcode = OpCode_Special;
             outSpecialOp = static_cast<SpecialOpCode>(i);
             return true;
@@ -168,6 +169,7 @@ void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& ou
         dcpu_assert_fmt(toUpcase(val.m_sexpVal->m_values[0].m_symVal) == "REF",
                         "Expecting REF first sym token, but found: %s", val.m_sexpVal->m_values[0].m_symVal.c_str());
 
+        refval:
         outWord = 0;
         
         if (val.m_sexpVal->m_values[1].m_type == SExp::Val::Number) {
@@ -235,13 +237,14 @@ vector<Instruction> LispAsmParser::ParseTokens(const vector<Token>& tokens) {
                         "Expecting form (specialop a) / (op b a), but found only %d values",
                         sexp->m_values.size());
 
-        uint8_t specialOp = 0;
         Instruction& inst = instructions.emplace_back();
-        const bool isSpecialOp = ParseOpCodeFromSexp(sexp->m_values[0], inst.m_opcode, specialOp);
+        uint16_t specialOpCode = 0;
+        const bool isSpecialOp = ParseOpCodeFromSexp(sexp->m_values[0], inst.m_opcode, specialOpCode);
         if (isSpecialOp) {
             dcpu_assert_fmt(sexp->m_values.size() == 2,
                             "Expecting a 2 value sexp of form (specialop a), but found only %d values",
                             sexp->m_values.size());
+            inst.m_b = static_cast<Value>(specialOpCode);
             ParseValueFromSexp(sexp->m_values[1], true, inst.m_a, inst.m_wordA, labelRefs);
         } else {
             dcpu_assert_fmt(sexp->m_values.size() == 3,

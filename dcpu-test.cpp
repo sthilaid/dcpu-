@@ -3,12 +3,14 @@
 #include <dcpu-lispasm.h>
 #include <decoder.h>
 #include <sstream>
+#include <cstdlib>
 
-#define CreateTestCase(name, source, ...)       \
-    {                                           \
-        TestCase t(name, source);               \
-        __VA_ARGS__                             \
-        if (!t.TryTest()) return -1;            \
+#define CreateTestCase(name, source, ...)                               \
+    {                                                                   \
+        TestCase t(name, source);                                       \
+        __VA_ARGS__                                                     \
+        bool shouldRun = singleTestName == nullptr || std::strcmp(singleTestName, t.m_testName) == 0;  \
+        if (shouldRun && !t.TryTest()) return -1;                       \
     }
 
 #define Verify(verif) t.AddVerifier([](const DCPU& cpu, const Memory& mem) { return verif; }, \
@@ -30,12 +32,15 @@ public:
     string m_lasmSource = "";
     vector<VerifyType> m_verifiers;
     vector<VerifyStrFnType> m_verifiersTxt;
+    int m_id = 0;
+    static int s_id;
 
     TestCase(const char* name, string source)
         : m_testName(name)
         , m_lasmSource(source)
         , m_verifiers()
         , m_verifiersTxt()
+        , m_id(s_id++)
     {}
     
     void AddVerifier(VerifyType v, VerifyStrFnType vStr) {
@@ -44,6 +49,7 @@ public:
     }
     bool TryTest() const;
 };
+int TestCase::s_id = 0;
 
 bool TestCase::TryTest() const {
     std::basic_stringstream sourceStream{m_lasmSource};
@@ -51,26 +57,32 @@ bool TestCase::TryTest() const {
     vector<Instruction> instructions = LispAsmParser::ParseTokens(tokens);
     vector<uint8_t> codebytes = Decoder::UnpackBytes(Decoder::Encode(instructions));
 
-    bool test_success = true;
+    int test_success = 0;
     DCPU cpu;
     Memory mem;
+ BeforeRun:
     cpu.Run(mem, codebytes);
     for (int i=0; i < m_verifiers.size(); ++i) {
         bool success = m_verifiers[i](cpu, mem);
-        printf("Test %s-%d ", m_testName, i);
-        if (success)
-            printf("[SUCCESS]\n");
-        else {
+        if (!success) {
         failedtest:
-            printf("[FAILURE] : %s\n", m_verifiersTxt[i](cpu, mem).c_str());
+            printf("Test %s-%d [FAILURE] : %s\n", m_verifiersTxt[i](cpu, mem).c_str());
+        } else {
+            ++test_success;
         }
-        test_success &= success;
     }
+    printf("Test %s %d/%d [%s]\n", m_testName, test_success, m_verifiers.size(),
+           test_success == m_verifiers.size() ? "SUCCESS" : "FAILURE");
 
     return test_success;
 }
 
 int main(int argc, char** argv) {
+    const char* singleTestName = nullptr;
+    if (argc > 1) {
+        singleTestName = argv[1];
+    }
+    
     CreateTestCase("Basic", "(set X 12)\n", VerifyEqual(cpu.GetRegister(Registers_X), 12));
 
     CreateTestCase("SET",
@@ -445,14 +457,25 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_Y), 0)
                    );
 
-    // CreateTestCase("JSR",
-    //                "(set j 2)"
-    //                "(std a 0xA)"
-    //                ,
-    //                VerifyEqual(cpu.GetRegister(Registers_A), 0xA)
-    //                VerifyEqual(cpu.GetRegister(Registers_I), 0xFFFF)
-    //                VerifyEqual(cpu.GetRegister(Registers_J), 1)
-    //                );
+    CreateTestCase("JSR",
+                   "(set x 5)"
+                   "(jsr sqr)"
+                   "(jsr sqr)"
+                   "(set push 11)"
+                   "(jsr addten)"
+                   "(set y pop)"
+                   "(set pc done)"
+                   "(label sqr)"
+                   "(mul x x)"
+                   "(set pc pop)"
+                   "(label addten)"
+                   "(add (ref sp 1) 10)"
+                   "(set pc pop)"
+                   "(label done)"
+                   ,
+                   VerifyEqual(cpu.GetRegister(Registers_X), 625)
+                   VerifyEqual(cpu.GetRegister(Registers_Y), 21)
+                   );
 
     printf("All Tests Completed Successfully\n");
     return 0;
