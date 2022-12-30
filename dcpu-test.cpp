@@ -62,7 +62,7 @@ bool TestCase::TryTest() const {
     DCPU cpu;
     Memory mem;
  BeforeRun:
-    cpu.Run(mem, codebytes);
+    cpu.run(mem, codebytes);
     for (int i=0; i < m_verifiers.size(); ++i) {
         bool success = m_verifiers[i](cpu, mem);
         if (!success) {
@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
         singleTestName = argv[1];
     }
     
-    CreateTestCase("Basic", "(set X 12)\n", VerifyEqual(cpu.GetRegister(Registers_X), 12));
+    CreateTestCase("Basic", "(set X 12)\n", VerifyEqual(cpu.getRegister(Registers_X), 12));
 
     CreateTestCase("SET",
                    "(set X 12)\n"
@@ -97,18 +97,18 @@ int main(int argc, char** argv) {
                    "(set b 0x7)"
                    "(and b pop)"
                    "(set a (ref sp -1))",
-                   VerifyEqual(cpu.GetSP(), 0xFFFF)
-                   VerifyEqual(cpu.GetRegister(Registers_B), 7)
+                   VerifyEqual(cpu.getSP(), 0xFFFF)
+                   VerifyEqual(cpu.getRegister(Registers_B), 7)
                    VerifyEqual(mem[0xFFFE], 15)
-                   VerifyEqual(cpu.GetRegister(Registers_A), 15)
+                   VerifyEqual(cpu.getRegister(Registers_A), 15)
                    );
 
     CreateTestCase("ADD",
                    "(set x 0xFFFF)"
                    "(add x 1)",
-                   VerifyEqual(cpu.GetEX(), 1)
-                   VerifyEqual(cpu.GetRegister(Registers_A), 0)
-                   VerifyEqual(cpu.GetCycles(), 3)
+                   VerifyEqual(cpu.getEX(), 1)
+                   VerifyEqual(cpu.getRegister(Registers_A), 0)
+                   VerifyEqual(cpu.getCycles(), 3)
                    );
 
     CreateTestCase("SUB",
@@ -118,12 +118,12 @@ int main(int argc, char** argv) {
                    "(sub y 1)"
                    "(sub x 1)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 0xFFFF)
-                   VerifyEqual(cpu.GetEX(), 0xFFFF)
-                   VerifyEqual(cpu.GetRegister(Registers_X), static_cast<uint16_t>(-1))
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 9)
+                   VerifyEqual(cpu.getRegister(Registers_X), 0xFFFF)
+                   VerifyEqual(cpu.getEX(), 0xFFFF)
+                   VerifyEqual(cpu.getRegister(Registers_X), static_cast<uint16_t>(-1))
+                   VerifyEqual(cpu.getRegister(Registers_Y), 9)
                    VerifyEqual(mem[555], 9)
-                   VerifyEqual(cpu.GetCycles(), 10)
+                   VerifyEqual(cpu.getCycles(), 10)
                    );
 
     CreateTestCase("MUL",
@@ -133,10 +133,10 @@ int main(int argc, char** argv) {
                    "(set y 0x8000)"
                    "(mul y 3)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 81)
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 0x8000)
-                   VerifyEqual(cpu.GetEX(), 0x1)
-                   VerifyEqual(cpu.GetCycles(), 9)
+                   VerifyEqual(cpu.getRegister(Registers_X), 81)
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0x8000)
+                   VerifyEqual(cpu.getEX(), 0x1)
+                   VerifyEqual(cpu.getCycles(), 9)
                    );
 
     CreateTestCase("MLU",
@@ -144,9 +144,9 @@ int main(int argc, char** argv) {
                    "(set y -1)"
                    "(mul x y)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 1)
-                   VerifyEqual(cpu.GetRegister(Registers_Y), static_cast<uint16_t>(-1))
-                   VerifyEqual(cpu.GetCycles(), 4)
+                   VerifyEqual(cpu.getRegister(Registers_X), 1)
+                   VerifyEqual(cpu.getRegister(Registers_Y), static_cast<uint16_t>(-1))
+                   VerifyEqual(cpu.getCycles(), 4)
                    );
 
     CreateTestCase("DIV",
@@ -158,11 +158,11 @@ int main(int argc, char** argv) {
                    "(set j 0x400)"
                    "(div i j)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 9)
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_I), 0)
-                   VerifyEqual(cpu.GetEX(), 64)
-                   VerifyEqual(cpu.GetCycles(), 14)
+                   VerifyEqual(cpu.getRegister(Registers_X), 9)
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0)
+                   VerifyEqual(cpu.getRegister(Registers_I), 0)
+                   VerifyEqual(cpu.getEX(), 64)
+                   VerifyEqual(cpu.getCycles(), 14)
                    );
 
     CreateTestCase("MOD",
@@ -171,9 +171,9 @@ int main(int argc, char** argv) {
                    "(mod x y)"
                    "(mod y 0)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 2)
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 0)
-                   VerifyEqual(cpu.GetCycles(), 8)
+                   VerifyEqual(cpu.getRegister(Registers_X), 2)
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0)
+                   VerifyEqual(cpu.getCycles(), 8)
                    );
 
     CreateTestCase("MDI",
@@ -185,10 +185,10 @@ int main(int argc, char** argv) {
                    "(set j 3)"
                    "(mdi i j)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), static_cast<uint16_t>(-2))
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_I), 2)
-                   VerifyEqual(cpu.GetCycles(), 14)
+                   VerifyEqual(cpu.getRegister(Registers_X), static_cast<uint16_t>(-2))
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0)
+                   VerifyEqual(cpu.getRegister(Registers_I), 2)
+                   VerifyEqual(cpu.getCycles(), 14)
                    );
 
     CreateTestCase("AND",
@@ -197,9 +197,9 @@ int main(int argc, char** argv) {
                    "(and x y)"
                    "(and y 0)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 0xA0);
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 0)
-                   VerifyEqual(cpu.GetCycles(), 6)
+                   VerifyEqual(cpu.getRegister(Registers_X), 0xA0);
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0)
+                   VerifyEqual(cpu.getCycles(), 6)
                    );
 
     CreateTestCase("BOR",
@@ -208,9 +208,9 @@ int main(int argc, char** argv) {
                    "(bor x y)"
                    "(bor y 0xFF)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 0xFF);
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 0xFF)
-                   VerifyEqual(cpu.GetCycles(), 7)
+                   VerifyEqual(cpu.getRegister(Registers_X), 0xFF);
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0xFF)
+                   VerifyEqual(cpu.getCycles(), 7)
                    );
 
     CreateTestCase("XOR",
@@ -219,9 +219,9 @@ int main(int argc, char** argv) {
                    "(xor x y)"
                    "(xor y 0xFF)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 0xFF);
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 0xAA)
-                   VerifyEqual(cpu.GetCycles(), 7)
+                   VerifyEqual(cpu.getRegister(Registers_X), 0xFF);
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0xAA)
+                   VerifyEqual(cpu.getCycles(), 7)
                    );
 
     CreateTestCase("SHR",
@@ -232,11 +232,11 @@ int main(int argc, char** argv) {
                    "(set i 1)"
                    "(shr i 1)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 0x55);
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 0x2A)
-                   VerifyEqual(cpu.GetRegister(Registers_I), 0)
-                   VerifyEqual(cpu.GetEX(), 0x8000)
-                   VerifyEqual(cpu.GetCycles(), 8)
+                   VerifyEqual(cpu.getRegister(Registers_X), 0x55);
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0x2A)
+                   VerifyEqual(cpu.getRegister(Registers_I), 0)
+                   VerifyEqual(cpu.getEX(), 0x8000)
+                   VerifyEqual(cpu.getCycles(), 8)
                    );
 
     CreateTestCase("ASR",
@@ -247,11 +247,11 @@ int main(int argc, char** argv) {
                    "(set i 0xF)"
                    "(asr i 3)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 0);
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 0xC000)
-                   VerifyEqual(cpu.GetRegister(Registers_I), 1)
-                   VerifyEqual(cpu.GetEX(), 0xE000)
-                   VerifyEqual(cpu.GetCycles(), 7)
+                   VerifyEqual(cpu.getRegister(Registers_X), 0);
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0xC000)
+                   VerifyEqual(cpu.getRegister(Registers_I), 1)
+                   VerifyEqual(cpu.getEX(), 0xE000)
+                   VerifyEqual(cpu.getCycles(), 7)
                    );
 
     CreateTestCase("SHL",
@@ -262,11 +262,11 @@ int main(int argc, char** argv) {
                    "(set i 0xF)"
                    "(shl i 3)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 8);
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_I), 0x78)
-                   VerifyEqual(cpu.GetEX(), 0xE000)
-                   VerifyEqual(cpu.GetCycles(), 7)
+                   VerifyEqual(cpu.getRegister(Registers_X), 8);
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0)
+                   VerifyEqual(cpu.getRegister(Registers_I), 0x78)
+                   VerifyEqual(cpu.getEX(), 0xE000)
+                   VerifyEqual(cpu.getCycles(), 7)
                    );
 
     CreateTestCase("IFB",
@@ -279,9 +279,9 @@ int main(int argc, char** argv) {
                    "(ifb x y)"
                    "(set j 1)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_I), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 1)
-                   VerifyEqual(cpu.GetCycles(), 10)
+                   VerifyEqual(cpu.getRegister(Registers_I), 0)
+                   VerifyEqual(cpu.getRegister(Registers_J), 1)
+                   VerifyEqual(cpu.getCycles(), 10)
                    );
 
     CreateTestCase("IFC",
@@ -294,9 +294,9 @@ int main(int argc, char** argv) {
                    "(ifc x y)"
                    "(set j 1)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_I), 1)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 0)
-                   VerifyEqual(cpu.GetCycles(), 10)
+                   VerifyEqual(cpu.getRegister(Registers_I), 1)
+                   VerifyEqual(cpu.getRegister(Registers_J), 0)
+                   VerifyEqual(cpu.getCycles(), 10)
                    );
 
     CreateTestCase("IFE",
@@ -309,9 +309,9 @@ int main(int argc, char** argv) {
                    "(ife x y)"
                    "(set j 1)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_I), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 1)
-                   VerifyEqual(cpu.GetCycles(), 10)
+                   VerifyEqual(cpu.getRegister(Registers_I), 0)
+                   VerifyEqual(cpu.getRegister(Registers_J), 1)
+                   VerifyEqual(cpu.getCycles(), 10)
                    );
 
     CreateTestCase("IFN",
@@ -324,9 +324,9 @@ int main(int argc, char** argv) {
                    "(ifn x y)"
                    "(set j 1)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_I), 1)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 0)
-                   VerifyEqual(cpu.GetCycles(), 10)
+                   VerifyEqual(cpu.getRegister(Registers_I), 1)
+                   VerifyEqual(cpu.getRegister(Registers_J), 0)
+                   VerifyEqual(cpu.getCycles(), 10)
                    );
 
     CreateTestCase("IFG",
@@ -347,11 +347,11 @@ int main(int argc, char** argv) {
                    "(ifg x y)"
                    "(set b 1)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_I), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_A), 1)
-                   VerifyEqual(cpu.GetRegister(Registers_B), 0)
-                   VerifyEqual(cpu.GetCycles(), 20)
+                   VerifyEqual(cpu.getRegister(Registers_I), 0)
+                   VerifyEqual(cpu.getRegister(Registers_J), 0)
+                   VerifyEqual(cpu.getRegister(Registers_A), 1)
+                   VerifyEqual(cpu.getRegister(Registers_B), 0)
+                   VerifyEqual(cpu.getCycles(), 20)
                    );
 
     CreateTestCase("IFA",
@@ -372,11 +372,11 @@ int main(int argc, char** argv) {
                    "(ifa x y)"
                    "(set b 1)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_I), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_A), 1)
-                   VerifyEqual(cpu.GetRegister(Registers_B), 1)
-                   VerifyEqual(cpu.GetCycles(), 20)
+                   VerifyEqual(cpu.getRegister(Registers_I), 0)
+                   VerifyEqual(cpu.getRegister(Registers_J), 0)
+                   VerifyEqual(cpu.getRegister(Registers_A), 1)
+                   VerifyEqual(cpu.getRegister(Registers_B), 1)
+                   VerifyEqual(cpu.getCycles(), 20)
                    );
 
     CreateTestCase("IFL",
@@ -397,11 +397,11 @@ int main(int argc, char** argv) {
                    "(ifl x y)"
                    "(set b 1)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_I), 1)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_A), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_B), 0)
-                   VerifyEqual(cpu.GetCycles(), 20)
+                   VerifyEqual(cpu.getRegister(Registers_I), 1)
+                   VerifyEqual(cpu.getRegister(Registers_J), 0)
+                   VerifyEqual(cpu.getRegister(Registers_A), 0)
+                   VerifyEqual(cpu.getRegister(Registers_B), 0)
+                   VerifyEqual(cpu.getCycles(), 20)
                    );
 
     CreateTestCase("IFU",
@@ -422,11 +422,11 @@ int main(int argc, char** argv) {
                    "(ifu x y)"
                    "(set b 1)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_I), 1)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_A), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_B), 1)
-                   VerifyEqual(cpu.GetCycles(), 20)
+                   VerifyEqual(cpu.getRegister(Registers_I), 1)
+                   VerifyEqual(cpu.getRegister(Registers_J), 0)
+                   VerifyEqual(cpu.getRegister(Registers_A), 0)
+                   VerifyEqual(cpu.getRegister(Registers_B), 1)
+                   VerifyEqual(cpu.getCycles(), 20)
                    );
 
     CreateTestCase("IfSeq",
@@ -443,9 +443,9 @@ int main(int argc, char** argv) {
                    "(ife b 2)"
                    "(set j 1)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_I), 0)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 1)
-                   VerifyEqual(cpu.GetCycles(), 16)
+                   VerifyEqual(cpu.getRegister(Registers_I), 0)
+                   VerifyEqual(cpu.getRegister(Registers_J), 1)
+                   VerifyEqual(cpu.getCycles(), 16)
                    );
 
     CreateTestCase("ADX",
@@ -453,9 +453,9 @@ int main(int argc, char** argv) {
                    "(adx i 2)"
                    "(adx j 3)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_I), 1)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 4)
-                   VerifyEqual(cpu.GetCycles(), 7)
+                   VerifyEqual(cpu.getRegister(Registers_I), 1)
+                   VerifyEqual(cpu.getRegister(Registers_J), 4)
+                   VerifyEqual(cpu.getCycles(), 7)
                    );
 
     CreateTestCase("SBX",
@@ -463,29 +463,29 @@ int main(int argc, char** argv) {
                    "(sbx i 2)"
                    "(sbx j 3)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_I), static_cast<uint16_t>(-1))
-                   VerifyEqual(cpu.GetRegister(Registers_J), static_cast<uint16_t>(-4))
-                   VerifyEqual(cpu.GetCycles(), 7)
+                   VerifyEqual(cpu.getRegister(Registers_I), static_cast<uint16_t>(-1))
+                   VerifyEqual(cpu.getRegister(Registers_J), static_cast<uint16_t>(-4))
+                   VerifyEqual(cpu.getCycles(), 7)
                    );
 
     CreateTestCase("STI",
                    "(set j 2)"
                    "(sti a 0xA)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_A), 0xA)
-                   VerifyEqual(cpu.GetRegister(Registers_I), 1)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 3)
-                   VerifyEqual(cpu.GetCycles(), 3)
+                   VerifyEqual(cpu.getRegister(Registers_A), 0xA)
+                   VerifyEqual(cpu.getRegister(Registers_I), 1)
+                   VerifyEqual(cpu.getRegister(Registers_J), 3)
+                   VerifyEqual(cpu.getCycles(), 3)
                    );
 
     CreateTestCase("STD",
                    "(set j 2)"
                    "(std a 0xA)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_A), 0xA)
-                   VerifyEqual(cpu.GetRegister(Registers_I), 0xFFFF)
-                   VerifyEqual(cpu.GetRegister(Registers_J), 1)
-                   VerifyEqual(cpu.GetCycles(), 3)
+                   VerifyEqual(cpu.getRegister(Registers_A), 0xA)
+                   VerifyEqual(cpu.getRegister(Registers_I), 0xFFFF)
+                   VerifyEqual(cpu.getRegister(Registers_J), 1)
+                   VerifyEqual(cpu.getCycles(), 3)
                    );
 
     CreateTestCase("LABELS",
@@ -499,9 +499,9 @@ int main(int argc, char** argv) {
                    "(set pc loop)"
                    "(label done)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 27)
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 0)
-                   VerifyEqual(cpu.GetCycles(), 33)
+                   VerifyEqual(cpu.getRegister(Registers_X), 27)
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0)
+                   VerifyEqual(cpu.getCycles(), 33)
                    );
 
     CreateTestCase("JSR",
@@ -520,9 +520,9 @@ int main(int argc, char** argv) {
                    "(set pc pop)"
                    "(label done)"
                    ,
-                   VerifyEqual(cpu.GetRegister(Registers_X), 625)
-                   VerifyEqual(cpu.GetRegister(Registers_Y), 21)
-                   VerifyEqual(cpu.GetCycles(), 27)
+                   VerifyEqual(cpu.getRegister(Registers_X), 625)
+                   VerifyEqual(cpu.getRegister(Registers_Y), 21)
+                   VerifyEqual(cpu.getCycles(), 27)
                    );
 
     if (!shouldStop)

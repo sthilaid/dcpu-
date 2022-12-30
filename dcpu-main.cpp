@@ -1,6 +1,7 @@
 #include <dcpu.h>
 #include <dcpu-mem.h>
 #include <dcpu-codex.h>
+#include <dcpu-hardware-clock.h>
 #include <vector>
 #include <fstream>
 
@@ -39,11 +40,12 @@ int main(int argc, char** args) {
 
     Memory mem;
     DCPU cpu;
+    cpu.addDevice<Clock>();
     const uint16_t lastProgramAddr = load_program(mem, rawbytes);
     // mem.Dump(0, 0x20);
-    while(cpu.GetPC() < lastProgramAddr) {
-        cpu.Step(mem);
-        cpu.PrintRegisters();
+    while(cpu.getPC() < lastProgramAddr) {
+        cpu.step(mem);
+        cpu.printRegisters();
         mem.Dump(0xFFF0, 0xFFFF);
     }
     return 0;

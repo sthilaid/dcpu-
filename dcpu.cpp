@@ -14,7 +14,7 @@ DCPU::DCPU()
     memset(&m_registers, 0, Registers_Count*2);
 }
 
-uint16_t* DCPU::GetAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord, uint8_t& inOutCycles) {
+uint16_t* DCPU::getAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord, uint8_t& inOutCycles) {
     const uint16_t numV = static_cast<uint16_t>(v);
     if (isA && numV >= 0x20) {
         if (numV == 0x3F) {
@@ -101,12 +101,12 @@ uint16_t GetNextCodeAddressSkipIF(Memory& mem, uint16_t pc, uint16_t& outSkipped
 }
 
 
-uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
+uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
     //printf("evaluating mem[0x%04X]: %s\n", m_pc, inst.toStr().c_str());
     uint8_t cycles = 0;
     const bool isSpecialOp = inst.m_opcode == OpCode_Special;
-    uint16_t* a_addr = GetAddrPtr(mem, true, inst.m_a, inst.m_wordA, cycles);
-    uint16_t* b_addr= isSpecialOp ? nullptr : GetAddrPtr(mem, false, inst.m_b, inst.m_wordB, cycles);
+    uint16_t* a_addr = getAddrPtr(mem, true, inst.m_a, inst.m_wordA, cycles);
+    uint16_t* b_addr= isSpecialOp ? nullptr : getAddrPtr(mem, false, inst.m_b, inst.m_wordB, cycles);
     
     switch (inst.m_opcode) {
     case OpCode_Special:{
@@ -185,7 +185,7 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
                             deviceIndex, m_devices.size());
             dcpu_assert_fmt(m_devices[deviceIndex] != nullptr, "device index %d was nullptr", deviceIndex);
 
-            uint8_t intCycles = m_devices[deviceIndex]->interrupt();
+            uint8_t intCycles = m_devices[deviceIndex]->interrupt(*this, mem);
             cycles += 4 + intCycles;
             break;
         }
@@ -444,30 +444,36 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
     return cycles;
 }
 
-void DCPU::Step(Memory& mem) {
+void DCPU::step(Memory& mem) {
     uint16_t* codebytePtr = mem+m_pc;
     Instruction nextInstruction = Codex::Decode(codebytePtr, mem.LastValidAddress-m_pc);
     const uint16_t originalPC = m_pc;
-    const uint8_t cycles = Eval(mem, nextInstruction);
+    const uint8_t cycles = eval(mem, nextInstruction);
     if (m_pc == originalPC)
         m_pc += nextInstruction.WordCount(); // only increment if it wasn't changed
     m_cycles += cycles;
 
     for (Hardware* device : m_devices) {
-        m_cycles += device->update();
+        m_cycles += device->update(*this, mem);
     }
 }
 
-uint32_t DCPU::Run(Memory& mem, const vector<uint8_t>& codebytes) {
+uint32_t DCPU::run(Memory& mem, const vector<uint8_t>& codebytes) {
     const uint16_t lastProgramAddr = mem.LoadProgram(Codex::PackBytes(codebytes));
     uint32_t stepCount = 0;
     while(m_pc < lastProgramAddr) {
-        Step(mem);
+        step(mem);
     }
     return m_cycles;
 }
 
-void DCPU::PrintRegisters() const {
+void DCPU::interrupt(uint16_t message){
+    if (m_ia != 0) {
+        m_queuedInterrupts.push(message);
+    }
+}
+
+void DCPU::printRegisters() const {
     printf("pc: %04X\n", m_pc);
     printf("sp: %04X\n", m_sp);
     printf("ex: %04X\n", m_ex);

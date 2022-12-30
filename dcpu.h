@@ -26,22 +26,28 @@ enum Registers : uint16_t {
 class DCPU {
 public:
     DCPU();
-    uint32_t Run(Memory& mem, const vector<uint8_t>& codebytes);
-    void Step(Memory& mem);
-    void AddDevice(Hardware* device);
+    uint32_t run(Memory& mem, const vector<uint8_t>& codebytes);
+    void step(Memory& mem);
+    void interrupt(uint16_t message);
 
-    void PrintRegisters() const;
+    template<typename HardwareType> void addDevice();
 
-    uint32_t GetCycles() const { return m_cycles; }
-    uint16_t GetPC() const { return m_pc; }
-    uint16_t GetSP() const { return m_sp; }
-    uint16_t GetEX() const { return m_ex; }
-    uint16_t GetIA() const { return m_ia; }
-    uint16_t GetRegister(Registers r) const { return m_registers[r]; }
+    void printRegisters() const;
+
+    uint32_t getCycles() const { return m_cycles; }
+    uint16_t getPC() const { return m_pc; }
+    uint16_t getSP() const { return m_sp; }
+    uint16_t getEX() const { return m_ex; }
+    uint16_t getIA() const { return m_ia; }
+    uint16_t getRegister(Registers r) const { return m_registers[r]; }
+
+    void setPC(uint16_t v) { m_pc = v; }
+    void setSP(uint16_t v) { m_sp = v; }
+    void setRegister(Registers r, uint16_t v) { m_registers[r] = v; }
 
 private:
-    uint16_t* GetAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord, uint8_t& inOutCycles);
-    uint8_t Eval(Memory& mem, Instruction& nextInstruction);
+    uint16_t* getAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord, uint8_t& inOutCycles);
+    uint8_t eval(Memory& mem, Instruction& nextInstruction);
 
     uint32_t m_cycles = 0;
     uint16_t m_pc = 0;
@@ -54,3 +60,9 @@ private:
     bool m_isInterruptQueueActive = false;
 };
 
+template<typename HardwareType>
+void DCPU::addDevice(){
+    HardwareType* device = new HardwareType{};
+    device->init(m_devices.size());
+    m_devices.push_back(device);
+}

@@ -138,11 +138,24 @@ inline Instruction::Instruction(OpCode op, Value b, Value a, uint16_t wordB, uin
 }
 
 inline uint8_t Instruction::WordCount() const {
-    return 1 + (isMultibyteValue(m_a) ? 1 : 0) + (isMultibyteValue(m_b) ? 1 : 0) ;
+    const bool isSpecial = m_opcode == OpCode_Special;
+    if (isSpecial) {
+        return 1 + (isMultibyteValue(m_a) ? 1 : 0);
+    } else {
+        return 1 + (isMultibyteValue(m_a) ? 1 : 0) + (isMultibyteValue(m_b) ? 1 : 0) ;
+    }
 }
 
-
 inline string ValueToStr(Value v, bool isA, uint16_t nextword){
+    if (isA) {
+        const uint16_t numV = static_cast<uint16_t>(v);
+        if (numV >= 0x20) {
+            if (numV == 0x3F)
+                return std::to_string(-1);
+            else
+                return std::to_string(numV-0x20);
+        }
+    }
     switch (v){
     case Value_Register_A: return "A";
     case Value_Register_B: return "B";
@@ -197,9 +210,27 @@ inline Value StrToValue(const string& str, bool isA) {
     return Value_Count;
 }
 
-inline string OpCodeToStr(OpCode op){
+inline string SpecialOpCodeToStr(SpecialOpCode op) {
     switch (op) {
-    case OpCode_Special: return "[todo-special]";
+    case SpecialOpCode_JSR: return "JSR";
+    case SpecialOpCode_INT: return "INT";
+    case SpecialOpCode_IAG: return "IAG";
+    case SpecialOpCode_IAS: return "IAS";
+    case SpecialOpCode_RFI: return "RFI";
+    case SpecialOpCode_IAQ: return "IAQ";
+    case SpecialOpCode_HWN: return "HWN";
+    case SpecialOpCode_HWQ: return "HWQ";
+    case SpecialOpCode_HWI: return "HWI";
+
+    default:
+        return "<Unknown SpecialOpCode>";
+    }
+}
+
+inline string OpCodeToStr(OpCode op, uint16_t b=0xFFFF){
+    switch (op) {
+    case OpCode_Special:
+        return SpecialOpCodeToStr(static_cast<SpecialOpCode>(b));
     case OpCode_SET: return "SET";
     case OpCode_ADD: return "ADD";
     case OpCode_SUB: return "SUB";
@@ -232,28 +263,19 @@ inline string OpCodeToStr(OpCode op){
     static_assert(OpCode_Count == 0x20, "Please update this when changing opcodes");
 }
 
-inline string SpecialOpCodeToStr(SpecialOpCode op) {
-    switch (op) {
-    case SpecialOpCode_JSR: return "JSR";
-    case SpecialOpCode_INT: return "INT";
-    case SpecialOpCode_IAG: return "IAG";
-    case SpecialOpCode_IAS: return "IAS";
-    case SpecialOpCode_RFI: return "RFI";
-    case SpecialOpCode_IAQ: return "IAQ";
-    case SpecialOpCode_HWN: return "HWN";
-    case SpecialOpCode_HWQ: return "HWQ";
-    case SpecialOpCode_HWI: return "HWI";
-
-    default:
-        return "<Unknown SpecialOpCode>";
-    }
-}
-
 inline string Instruction::toStr() const {
-    string msg = OpCodeToStr(m_opcode)
-        + " "
-        + ValueToStr(m_b, false, m_wordB)
-        + ", "
-        + ValueToStr(m_a, true, m_wordA);
+    string msg;
+    if (m_opcode == OpCode_Special) {
+        msg = OpCodeToStr(m_opcode, m_b)
+            + " "
+            + ValueToStr(m_a, true, m_wordA);
+    }
+    else {
+        msg = OpCodeToStr(m_opcode, m_b)
+            + " "
+            + ValueToStr(m_b, false, m_wordB)
+            + ", "
+            + ValueToStr(m_a, true, m_wordA);
+    }
     return msg;
 }
