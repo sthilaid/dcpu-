@@ -8,9 +8,9 @@ Clock::Clock()
     , m_tickCount{0}
     , m_interruptsEnabled{false}
 {
-    m_id = 0xa03de91c;             // Basic RT Clock 5000
-    m_version = 0;
-    m_manifacturer = 0xFE124C;     // FEIZAC
+    m_id = 0x12d0b402;             // https://github.com/lucaspiller/dcpu-specifications/blob/master/clock.txt
+    m_version = 1;
+    m_manifacturer = 0x0FE124C0;     // FEIZAC
 }
 
 uint8_t Clock::update(DCPU& cpu, Memory& mem) {

@@ -3,6 +3,8 @@
 #include <dcpu-mem.h>
 #include <dcpu-lispasm.h>
 #include <dcpu-codex.h>
+#include <dcpu-hardware-clock.h>
+#include <dcpu-hardware-tester.h>
 #include <sstream>
 #include <cstdlib>
 
@@ -23,14 +25,17 @@
                                             char buf[sz + 1];           \
                                             snprintf(buf, sizeof buf, fmt, a, b); \
                                             return string(buf); });
+#define AddDevice(deviceType) t.AddDeviceFn([](DCPU& cpu, Memory& mem) { cpu.addDevice<deviceType>(); });
 
 class TestCase {
 public:
+    using AddDeviceFnType = void(*)(DCPU& cpu, Memory& mem);
     using VerifyType = bool(*)(const DCPU& cpu, const Memory& mem);
     using VerifyStrFnType = string(*)(const DCPU& cpu, const Memory& mem);
 
     const char* m_testName = nullptr;
     string m_lasmSource = "";
+    vector<AddDeviceFnType> m_deviceAddFns;
     vector<VerifyType> m_verifiers;
     vector<VerifyStrFnType> m_verifiersTxt;
     int m_id = 0;
@@ -48,6 +53,9 @@ public:
         m_verifiers.push_back(v);
         m_verifiersTxt.push_back(vStr);
     }
+    void AddDeviceFn(AddDeviceFnType fn) {
+        m_deviceAddFns.push_back(fn);
+    }
     bool TryTest() const;
 };
 int TestCase::s_id = 0;
@@ -61,6 +69,9 @@ bool TestCase::TryTest() const {
     int test_success = 0;
     DCPU cpu;
     Memory mem;
+    for (AddDeviceFnType deviceAdder : m_deviceAddFns) {
+        deviceAdder(cpu, mem);
+    }
  BeforeRun:
     cpu.run(mem, codebytes);
     for (int i=0; i < m_verifiers.size(); ++i) {
@@ -523,6 +534,144 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.getRegister(Registers_X), 625)
                    VerifyEqual(cpu.getRegister(Registers_Y), 21)
                    VerifyEqual(cpu.getCycles(), 27)
+                   );
+
+    CreateTestCase("IAS",
+                   "(ias 10)"
+                   ,
+                   VerifyEqual(cpu.getIA(), 10)
+                   VerifyEqual(cpu.getCycles(), 1)
+                   );
+
+    CreateTestCase("IAG",
+                   "(iag x)"
+                   "(ias 10)"
+                   "(iag y)"
+                   ,
+                   VerifyEqual(cpu.getRegister(Registers_X), 0)
+                   VerifyEqual(cpu.getIA(), 10)
+                   VerifyEqual(cpu.getRegister(Registers_Y), 10)
+                   VerifyEqual(cpu.getCycles(), 3)
+                   );
+
+    CreateTestCase("INT",
+                   "(int 21)"
+                   "(set x 10)"
+                   "(ias handler)"
+                   "(int 15)"
+                   "(set x 11)"
+                   "(label handler)"
+                   ,
+                   VerifyEqual(cpu.getRegister(Registers_X), 10)
+                   VerifyEqual(cpu.getRegister(Registers_A), 15)
+                   VerifyEqual(cpu.getCycles(), 11)
+                   );
+
+    CreateTestCase("RFI",
+                   "(set a 3)"
+                   "(int 21)"
+                   "(ias handler)"
+                   "(int 15)"
+                   "(set pc done)"
+                   "(label handler)"
+                   "(set x a)"
+                   "(rfi 0)"
+                   "(label done)"
+                   ,
+                   VerifyEqual(cpu.getRegister(Registers_X), 15)
+                   VerifyEqual(cpu.getRegister(Registers_A), 3)
+                   VerifyEqual(cpu.getCycles(), 17)
+                   );
+
+    CreateTestCase("InterruptQueue",
+                   "(set a 3)"
+                   "(ias handler)"
+                   "(int 1)"
+                   "(set pc done)"
+
+                   "(label handler)"
+                   "(ife a 2)"
+                   "(set pc handle-two)"
+                   "(ife a 1)"
+                   "(set pc handle-one)"
+
+                   "(label handle-one)"
+                   "(int 2)"
+                   "(int 2)"
+                   "(int 2)"
+                   "(set x 1)"
+                   "(rfi 0)"
+
+                   "(label handle-two)"
+                   "(add x 2)"
+                   "(rfi 0)"
+
+                   "(label done)"
+                   ,
+                   VerifyEqual(cpu.getRegister(Registers_X), 7)
+                   VerifyEqual(cpu.getRegister(Registers_A), 3)
+                   VerifyEqual(cpu.getCycles(), 59)
+                   );
+
+    CreateTestCase("IAQ",
+                   "(ias handler)"
+                   "(iaq 1)"
+                   "(int 0)"
+                   "(int 0)"
+                   "(int 0)"
+                   "(set x 1)"
+                   "(iaq 0)"
+                   "(set pc done)"
+                   "(label handler)"
+                   "(mul x 2)"
+                   "(rfi 0)"
+                   "(label done)"
+                   ,
+                   VerifyEqual(cpu.getRegister(Registers_X), 8)
+                   VerifyEqual(cpu.getCycles(), 36)
+                   );
+
+    CreateTestCase("HWN",
+                   "(hwn a)"
+                   ,
+                   AddDevice(Clock);
+                   AddDevice(Clock);
+                   AddDevice(Clock);
+                   VerifyEqual(cpu.getRegister(Registers_A), 3)
+                   VerifyEqual(cpu.getCycles(), 2)
+                   );
+
+    CreateTestCase("HWQ",
+                   "(hwq 0)"
+                   ,
+                   AddDevice(Clock);
+                   VerifyEqual(cpu.getRegister(Registers_A), 0xb402)
+                   VerifyEqual(cpu.getRegister(Registers_B), 0x12d0)
+                   VerifyEqual(cpu.getRegister(Registers_C), 1)
+                   VerifyEqual(cpu.getRegister(Registers_X), 0x24C0)
+                   VerifyEqual(cpu.getRegister(Registers_Y), 0x0FE1)
+                   VerifyEqual(cpu.getCycles(), 4)
+                   );
+
+    CreateTestCase("HWI",
+                   "(set i 11)"
+                   "(set a 0)"
+                   "(hwi 0)"    // x should be set to 10 by TesterDevice
+                   "(mul i x)" 
+                   "(set a 1)"
+                   "(hwi 0)"    // x should be set to a random key
+                   "(set a x)"
+                   "(hwi 0)"    // resend key to hardware and result will be pushed on the stack
+                   "(set a 1)"
+                   "(hwi 0)"    // pask another key
+                   "(set a 0xBADD)"
+                   "(hwi 0)"    // send bad key, error will be pushed on the stack
+                   ,
+                   AddDevice(TesterDevice);
+                   VerifyEqual(cpu.getRegister(Registers_I), 110)
+                   VerifyEqual(mem[cpu.getSP()+1], 123)
+                   VerifyEqual(mem[cpu.getSP()], 0xFFFF)
+                   VerifyEqual(cpu.getCycles(), 29)
                    );
 
     if (!shouldStop)

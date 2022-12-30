@@ -127,7 +127,8 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
                     m_queuedInterrupts.push(*a_addr);
                 } else {
                     m_isInterruptQueueActive = true;
-                    *(mem + (--m_sp)) = m_pc;
+                    const uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
+                    *(mem + (--m_sp)) = nextPC;
                     *(mem + (--m_sp)) = m_registers[Registers_A];;
                     m_pc = m_ia;
                     m_registers[Registers_A] = *a_addr;
@@ -137,7 +138,7 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
         }
         case SpecialOpCode_IAG: {
             cycles += 1;
-            m_registers[Registers_A] = m_ia;
+            *a_addr = m_ia;
             break;
         }
         case SpecialOpCode_IAS: {
@@ -146,6 +147,7 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
             break;
         }
         case SpecialOpCode_RFI: {
+            SpecialOpCode_RFI:
             cycles += 3;
             m_isInterruptQueueActive = false;
             m_registers[Registers_A] = *(mem + (m_sp++));
@@ -456,6 +458,16 @@ void DCPU::step(Memory& mem) {
     for (Hardware* device : m_devices) {
         m_cycles += device->update(*this, mem);
     }
+
+    if (!m_isInterruptQueueActive && !m_queuedInterrupts.empty()) {
+        const uint16_t intMsg = m_queuedInterrupts.front();
+        m_queuedInterrupts.pop();
+        m_isInterruptQueueActive = true;
+        *(mem + (--m_sp)) = m_pc;
+        *(mem + (--m_sp)) = m_registers[Registers_A];;
+        m_pc = m_ia;
+        m_registers[Registers_A] = intMsg;
+    }
 }
 
 uint32_t DCPU::run(Memory& mem, const vector<uint8_t>& codebytes) {
@@ -464,6 +476,9 @@ uint32_t DCPU::run(Memory& mem, const vector<uint8_t>& codebytes) {
     while(m_pc < lastProgramAddr) {
         step(mem);
     }
+    dcpu_assert_fmt(m_queuedInterrupts.empty(), "Did not process all interrupts, queue: %d, queue active? %d",
+                    m_queuedInterrupts.size(), m_isInterruptQueueActive);
+
     return m_cycles;
 }
 
