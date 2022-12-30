@@ -42,11 +42,12 @@ int main(int argc, char** args) {
     DCPU cpu;
     cpu.addDevice<Clock>();
     const uint16_t lastProgramAddr = load_program(mem, rawbytes);
-    // mem.Dump(0, 0x20);
+
     while(cpu.getPC() < lastProgramAddr) {
         cpu.step(mem);
-        cpu.printRegisters();
-        mem.Dump(0xFFF0, 0xFFFF);
     }
+    cpu.printRegisters();
+    mem.Dump(0xFFF0, 0xFFFF);
+
     return 0;
 }
