@@ -1,6 +1,6 @@
-* DCPU-16 implementation in c++
+# DCPU-16 implementation in c++
 
-dcpu implemented following the 1.7 specifications, such as found
+DCPU-16 implemented following the 1.7 specifications, such as found
 https://github.com/lucaspiller/dcpu-specifications/blob/master/dcpu16.txt.
 
 Contains several executables:
