@@ -9,6 +9,7 @@ Contains several executables:
   file. These file use a lisp-like syntax to represent the dcpu instructions,
   and provide access to labels, for example:
 
+```
   (set push 10)
   (jsr sqr)
   (add 5 peek 1)
@@ -19,6 +20,7 @@ Contains several executables:
   (set pc pop)
 
   (label hlt)
+```
 
 - dcpu <bin-file>: Will run the dcpu emulator on the binary source file (loaded
   at address 0x0) and then outputs the cpu state and the bottom of the stack.
