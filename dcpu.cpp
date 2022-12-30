@@ -72,25 +72,30 @@ uint16_t GetNextCodeAddress(Memory& mem, uint16_t pc) {
     return pc + currentWordCount;
 }
 
-uint16_t GetNextCodeAddressSkipIF(Memory& mem, uint16_t pc, bool& skippedExtra) {
-    Instruction currentInstruction = Codex::Decode(mem+pc, mem.LastValidAddress-pc);
-    const uint8_t currentWordCount = currentInstruction.WordCount();
-    uint16_t nextPC = pc + currentWordCount;
-    skippedExtra = false;
+uint16_t GetNextCodeAddressSkipIF(Memory& mem, uint16_t pc, uint16_t& outSkippedInstructionsCount) {
+    uint16_t nextPC = pc;
+    bool foundNext = false;
+    while (!foundNext && pc <= Memory::LastValidAddress) {
+        Instruction currentInstruction = Codex::Decode(mem+nextPC, mem.LastValidAddress-nextPC);
+        const uint8_t currentWordCount = currentInstruction.WordCount();
+        nextPC += currentWordCount;
+        ++outSkippedInstructionsCount;
 
-    switch (currentInstruction.m_opcode) {
-    case OpCode_IFB:
-    case OpCode_IFC:
-    case OpCode_IFE:
-    case OpCode_IFN:
-    case OpCode_IFG:
-    case OpCode_IFA:
-    case OpCode_IFL:
-    case OpCode_IFU:
-        Instruction nextInstruction = Codex::Decode(mem+pc, mem.LastValidAddress-pc);
-        const uint8_t nextWordCount = currentInstruction.WordCount();
-        nextPC += nextWordCount;
-        skippedExtra = true;
+        switch (currentInstruction.m_opcode) {
+        case OpCode_IFB:
+        case OpCode_IFC:
+        case OpCode_IFE:
+        case OpCode_IFN:
+        case OpCode_IFG:
+        case OpCode_IFA:
+        case OpCode_IFL:
+        case OpCode_IFU:
+            foundNext = false;
+            break;
+        default:
+            foundNext = true;
+            break;
+        }
     }
     return nextPC;
 }
@@ -305,11 +310,11 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
     case OpCode_IFB: {
         OpCode_IFB:
         if ((*b_addr & *a_addr) == 0) {
-            bool skippedIF = false;
+            uint16_t skippedCount = 0;
             uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
-            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedIF);
+            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
-            cycles += skippedIF ? 4 : 3;
+            cycles += 2 + skippedCount;
         } else {
             cycles += 2;
         }
@@ -317,11 +322,11 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_IFC: {
         if ((*b_addr & *a_addr) != 0) {
-            bool skippedIF = false;
+            uint16_t skippedCount = 0;
             uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
-            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedIF);
+            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
-            cycles += skippedIF ? 4 : 3;
+            cycles += 2 + skippedCount;
         } else {
             cycles += 2;
         }
@@ -329,11 +334,11 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_IFE: {
         if (*b_addr != *a_addr) {
-            bool skippedIF = false;
+            uint16_t skippedCount = 0;
             uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
-            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedIF);
+            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
-            cycles += skippedIF ? 4 : 3;
+            cycles += 2 + skippedCount;
         } else {
             cycles += 2;
         }
@@ -342,11 +347,11 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
     case OpCode_IFN: {
         test:
         if (*b_addr == *a_addr) {
-            bool skippedIF = false;
+            uint16_t skippedCount = 0;
             uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
-            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedIF);
+            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
-            cycles += skippedIF ? 4 : 3;
+            cycles += 2 + skippedCount;
         } else {
             cycles += 2;
         }
@@ -354,11 +359,11 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_IFG: {
         if (*b_addr <= *a_addr) {
-            bool skippedIF = false;
+            uint16_t skippedCount = 0;
             uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
-            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedIF);
+            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
-            cycles += skippedIF ? 4 : 3;
+            cycles += 2 + skippedCount;
         } else {
             cycles += 2;
         }
@@ -366,11 +371,11 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_IFA: {
         if (static_cast<int16_t>(*b_addr) <= static_cast<int16_t>(*a_addr)) {
-            bool skippedIF = false;
+            uint16_t skippedCount = 0;
             uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
-            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedIF);
+            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
-            cycles += skippedIF ? 4 : 3;
+            cycles += 2 + skippedCount;
         } else {
             cycles += 2;
         }
@@ -378,11 +383,11 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_IFL: {
         if (*b_addr >= *a_addr) {
-            bool skippedIF = false;
+            uint16_t skippedCount = 0;
             uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
-            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedIF);
+            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
-            cycles += skippedIF ? 4 : 3;
+            cycles += 2 + skippedCount;
         } else {
             cycles += 2;
         }
@@ -390,11 +395,11 @@ uint8_t DCPU::Eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_IFU: {
         if (static_cast<int16_t>(*b_addr) >= static_cast<int16_t>(*a_addr)) {
-            bool skippedIF = false;
+            uint16_t skippedCount = 0;
             uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
-            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedIF);
+            nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
-            cycles += skippedIF ? 4 : 3;
+            cycles += 2 + skippedCount;
         } else {
             cycles += 2;
         }

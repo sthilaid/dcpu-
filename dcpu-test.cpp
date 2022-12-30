@@ -67,7 +67,7 @@ bool TestCase::TryTest() const {
         bool success = m_verifiers[i](cpu, mem);
         if (!success) {
         failedtest:
-            printf("Test %s-%d [FAILURE] : %s\n", m_verifiersTxt[i](cpu, mem).c_str());
+            printf("Test %s-%d [FAILURE] : %s\n", m_testName, i, m_verifiersTxt[i](cpu, mem).c_str());
         } else {
             ++test_success;
         }
@@ -427,6 +427,25 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.GetRegister(Registers_A), 0)
                    VerifyEqual(cpu.GetRegister(Registers_B), 1)
                    VerifyEqual(cpu.GetCycles(), 20)
+                   );
+
+    CreateTestCase("IfSeq",
+                   "(set x 1)"
+                   "(set y 2)"
+                   "(ifg x y)"
+                   "(ife x 1)"
+                   "(ife y 2)"
+                   "(set i 1)"
+                   "(set a 1)"
+                   "(set b 2)"
+                   "(ifl a b)"
+                   "(ife a 1)"
+                   "(ife b 2)"
+                   "(set j 1)"
+                   ,
+                   VerifyEqual(cpu.GetRegister(Registers_I), 0)
+                   VerifyEqual(cpu.GetRegister(Registers_J), 1)
+                   VerifyEqual(cpu.GetCycles(), 16)
                    );
 
     CreateTestCase("ADX",
