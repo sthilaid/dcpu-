@@ -210,7 +210,7 @@ void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& ou
                     out = Value_Peek;
                 }
             } else {
-                dcpu_assert(false, "Couldn't parse value sexp properly");
+                dcpu_assert_fmt(false, "Couldn't parse sexp value properly: %s", val.m_sexpVal->toStr().c_str());
             }
         }
             
@@ -242,22 +242,22 @@ vector<Instruction> LispAsmParser::ParseTokens(const vector<Token>& tokens) {
             continue;
         }
         dcpu_assert_fmt(sexp->m_values.size() >= 2,
-                        "Expecting form (specialop a) / (op b a), but found only %d values",
-                        sexp->m_values.size());
+                        "Expecting form (specialop a) / (op b a), but found %d values: %s",
+                        sexp->m_values.size(), sexp->toStr().c_str());
 
         Instruction& inst = instructions.emplace_back();
         uint16_t specialOpCode = 0;
         const bool isSpecialOp = ParseOpCodeFromSexp(sexp->m_values[0], inst.m_opcode, specialOpCode);
         if (isSpecialOp) {
             dcpu_assert_fmt(sexp->m_values.size() == 2,
-                            "Expecting a 2 value sexp of form (specialop a), but found only %d values",
-                            sexp->m_values.size());
+                            "Expecting a 2 value sexp of form (specialop a), but found only %d values: %s",
+                            sexp->m_values.size(), sexp->toStr().c_str());
             inst.m_b = static_cast<Value>(specialOpCode);
             ParseValueFromSexp(sexp->m_values[1], true, inst.m_a, inst.m_wordA, labelRefs);
         } else {
             dcpu_assert_fmt(sexp->m_values.size() == 3,
-                            "Expecting a 3 value sexp of form (op b a), but found only %d values",
-                            sexp->m_values.size());
+                            "Expecting a 3 value sexp of form (op b a), but found only %d values: %s",
+                            sexp->m_values.size(), sexp->toStr().c_str());
             ParseValueFromSexp(sexp->m_values[1], false, inst.m_b, inst.m_wordB, labelRefs);
             ParseValueFromSexp(sexp->m_values[2], true, inst.m_a, inst.m_wordA, labelRefs);
         }

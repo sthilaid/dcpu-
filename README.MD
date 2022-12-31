@@ -11,15 +11,16 @@ Contains several executables:
 
 ```
   (set push 10)
-  (jsr sqr)
-  (add 5 peek 1)
-  (set pc hlt)
+  (jsr square)
+  (add 5 peek)
+  (set x pop)
+  (set pc halt)
   
-  (label sqr)
-  (add 5 (ref peek 1))
+  (label square)
+  (add (ref sp 1) 5)
   (set pc pop)
 
-  (label hlt)
+  (label halt)
 ```
 
 - dcpu <bin-file>: Will run the dcpu emulator on the binary source file (loaded

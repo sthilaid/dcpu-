@@ -1,8 +1,11 @@
-(set X 15) ; set x to 15
-(shr X 1) ; X -> 7
-(add Y X) ; Y -> 7
-(mul X Y) ; X -> 0x0D
-(ifb A A) ; if A&A do next (should skip)
-(mul X Y) ; will be skipped
-(set (ref X 3) 10) ; set mem[0xD+3] to 10
-(set (ref SP) 66) ; SP <- 66
+  (set push 10)
+  (jsr square)
+  (add 5 peek)
+  (set x pop)
+  (set pc halt)
+  
+  (label square)
+  (add (ref sp 1) 5)
+  (set pc pop)
+
+  (label halt)
