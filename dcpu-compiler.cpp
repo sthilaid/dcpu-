@@ -3,6 +3,9 @@
 #include <dcpu-lispasm.h>
 #include <vector>
 #include <fstream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 vector<Instruction> GenerateTestInstructions() {
     vector<Instruction> instructions;
@@ -38,15 +41,28 @@ void testEncodeDecode() {
 }
 
 int main(int argc, char** args) {
-    if (argc != 3) {
-        printf("usage: dcpu-compiler <input-source-file> <binary-output-file>\n");
+    string infile = argc >= 2 ? args[1] : "";
+    string outfile = infile;
+    if (argc >= 3) {
+        outfile = args[2];
+    } else if (argc == 2 && infile.compare(infile.size()-5, infile.size(), ".lasm") == 0) {
+        outfile.replace(infile.size()-5, infile.size(), ".dcpu");;
+    }
+    if (outfile.empty()) {
+        printf("usage: dcpu-compiler <input-source-file.lasm>\n");
+        printf("usage: dcpu-compiler <input-source-file> binary-output-file\n");
         return 1;
     }
 
-    vector<Instruction> instructions = LispAsmParser::ParseLispAsm(args[1]);
+    if (!fs::exists(fs::status(infile.c_str()))) {
+        printf("Unknown file: %s\n", infile.c_str());
+        return 1;
+    }
+
+    vector<Instruction> instructions = LispAsmParser::ParseLispAsm(infile.c_str());
 
     vector<uint16_t> rawcode;
-    std::ofstream binFileStream(args[2], std::ios::binary);
+    std::ofstream binFileStream(outfile.c_str(), std::ios::binary);
 
     printf("comiling instructions:\n");
     for(const Instruction& i : instructions) printf("  %s\n", i.toStr().c_str());
@@ -57,7 +73,7 @@ int main(int argc, char** args) {
     }
     
     binFileStream.close();
-    printf("wrote %d bytes into file %s successfully.\n", rawdata.size(), args[2]);
+    printf("wrote %d bytes into file %s successfully.\n", rawdata.size(), outfile.c_str());
 
     return 0;
 }

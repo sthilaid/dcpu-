@@ -10,10 +10,10 @@ Clock::Clock()
 {
     m_id = 0x12d0b402;             // https://github.com/lucaspiller/dcpu-specifications/blob/master/clock.txt
     m_version = 1;
-    m_manifacturer = 0x0FE124C0;     // FEIZAC
+    m_manifacturer = 0x0FE124C0;   // FEIZAC
 }
 
-uint8_t Clock::update(DCPU& cpu, Memory& mem) {
+uint32_t Clock::update(DCPU& cpu, Memory& mem) {
     if (m_period == 0)
         return 0;
 
@@ -33,7 +33,7 @@ uint8_t Clock::update(DCPU& cpu, Memory& mem) {
     return 1;
 }
 
-uint8_t Clock::interrupt(DCPU& cpu, Memory& mem) {
+uint32_t Clock::interrupt(DCPU& cpu, Memory& mem) {
     const uint16_t a = cpu.getRegister(Registers_A);
     const uint16_t b = cpu.getRegister(Registers_B);
     switch (a) {

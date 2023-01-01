@@ -5,8 +5,8 @@
 class Clock : public Hardware {
 public:
     Clock();
-    uint8_t update(DCPU& cpu, Memory& mem) override;
-    uint8_t interrupt(DCPU& cpu, Memory& mem) override;
+    uint32_t update(DCPU& cpu, Memory& mem) override;
+    uint32_t interrupt(DCPU& cpu, Memory& mem) override;
 
 private:
     using time = std::chrono::time_point<std::chrono::system_clock>;

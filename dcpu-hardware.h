@@ -6,9 +6,10 @@ class Memory;
 
 class Hardware {
 public:
+    virtual ~Hardware() {};
     void init(uint8_t deviceIndex);
-    virtual uint8_t update(DCPU& cpu, Memory& mem) = 0;
-    virtual uint8_t interrupt(DCPU& cpu, Memory& mem) = 0;
+    virtual uint32_t update(DCPU& cpu, Memory& mem) = 0;
+    virtual uint32_t interrupt(DCPU& cpu, Memory& mem) = 0;
 
     uint32_t getId() const { return m_id; }
     uint16_t getVersion() const { return m_version; }

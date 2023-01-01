@@ -1,0 +1,89 @@
+;; add Hello World in video memory
+
+(set c 0x8000)    ; start index
+
+(set push 0x48) ; chr H
+(set push 1)    ; bg
+(set push 0)    ; fb
+(jsr setchar)
+
+(set push 0x65)     ; chr e
+(set push 1)        ; bg
+(set push 0)        ; fb
+(jsr setchar)
+
+(set push 0x6C)     ; chr l
+(set push 1)        ; bg
+(set push 0)        ; fb
+(jsr setchar)
+
+(set push 0x6C)     ; chr l
+(set push 1)        ; bg
+(set push 0)        ; fb
+(jsr setchar)
+
+(set push 0x6F)     ; chr o
+(set push 1)        ; bg
+(set push 0)        ; fb
+(jsr setchar)
+
+(set push 0x20)     ; chr space
+(set push 1)        ; bg
+(set push 0)        ; fb
+(jsr setchar)
+
+(set push 0x57)     ; chr W
+(set push 1)        ; bg
+(set push 0)        ; fb
+(jsr setchar)
+
+(set push 0x6F)     ; chr o
+(set push 1)        ; bg
+(set push 0)        ; fb
+(jsr setchar)
+
+(set push 0x72)     ; chr r
+(set push 1)        ; bg
+(set push 0)        ; fb
+(jsr setchar)
+
+(set push 0x6C)     ; chr l
+(set push 1)        ; bg
+(set push 0)        ; fb
+(jsr setchar)
+
+(set push 0x64)     ; chr d
+(set push 1)        ; bg
+(set push 0)        ; fb
+(jsr setchar)
+
+;; turn on monitor with memmap 0x8000
+(set a 0)
+(set b 0x8000)
+(hwi 1)
+
+;; loop for 5 sec
+(set a 0)
+(set b 60)
+(hwi 0)
+(set a 1)
+(label loop)
+(hwi 0)
+(ife c 5)
+(set pc halt)
+(set pc loop)
+
+(label setchar)
+(set j pop) ; ret addr
+(set a pop) ; fg
+(shl a 12)
+(set b pop) ; bg
+(shl b 8)
+(bor a b)
+(set b pop) ; chr
+(bor a b)
+(set (ref c) a)
+(add c 1) ; inc index
+(set pc j)
+
+(label halt)

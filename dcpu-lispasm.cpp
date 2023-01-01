@@ -278,7 +278,7 @@ vector<Instruction> LispAsmParser::ParseTokens(const vector<Token>& tokens) {
     return instructions;
 }
 
-vector<Instruction> LispAsmParser::ParseLispAsm(char* filename){
+vector<Instruction> LispAsmParser::ParseLispAsm(const char* filename){
     std::ifstream inputStream(filename, std::ios::in);
     if (!inputStream.is_open()) {
         printf("unknown file: %s\n", filename);

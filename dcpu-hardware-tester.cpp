@@ -7,11 +7,11 @@ TesterDevice::TesterDevice() {
     
 }
 
-uint8_t TesterDevice::update(DCPU& cpu, Memory& mem) {
+uint32_t TesterDevice::update(DCPU& cpu, Memory& mem) {
     return 0;
 }
 
-uint8_t TesterDevice::interrupt(DCPU& cpu, Memory& mem) {
+uint32_t TesterDevice::interrupt(DCPU& cpu, Memory& mem) {
     const uint16_t a = cpu.getRegister(Registers_A);
     if (m_lastkey != 0) {
         const uint16_t res = a == m_lastkey ? 123 : 0xFFFF;

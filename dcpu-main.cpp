@@ -2,6 +2,7 @@
 #include <dcpu-mem.h>
 #include <dcpu-codex.h>
 #include <dcpu-hardware-clock.h>
+#include <dcpu-hardware-monitor.h>
 #include <vector>
 #include <fstream>
 
@@ -10,13 +11,6 @@ using std::vector;
 uint16_t load_program(Memory& mem, const vector<uint8_t>& codebytes) {
     vector<uint16_t> codeWords = Codex::PackBytes(codebytes);
     vector<Instruction> instructions = Codex::Decode(codeWords);
-    // printf("loading into memory:\n");
-    // int b=0;
-    // for (const Instruction& i : instructions) {
-    //     uint16_t size = i.WordCount();
-    //     printf("  %04X : %s\n", codeWords[b], i.toStr().c_str());
-    //     b+=size;
-    // }
     return mem.LoadProgram(codeWords);
 }
 
@@ -41,6 +35,7 @@ int main(int argc, char** args) {
     Memory mem;
     DCPU cpu;
     cpu.addDevice<Clock>();
+    cpu.addDevice<Monitor>();
     const uint16_t lastProgramAddr = load_program(mem, rawbytes);
 
     while(cpu.getPC() < lastProgramAddr) {

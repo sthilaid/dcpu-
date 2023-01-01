@@ -182,12 +182,12 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
             break;
         }
         case SpecialOpCode_HWI: {
-            uint16_t deviceIndex = *a_addr;
+            const uint16_t deviceIndex = *a_addr;
             dcpu_assert_fmt(deviceIndex < m_devices.size(), "device index %d larger then number of devices (%d)",
                             deviceIndex, m_devices.size());
             dcpu_assert_fmt(m_devices[deviceIndex] != nullptr, "device index %d was nullptr", deviceIndex);
 
-            uint8_t intCycles = m_devices[deviceIndex]->interrupt(*this, mem);
+            const uint32_t intCycles = m_devices[deviceIndex]->interrupt(*this, mem);
             cycles += 4 + intCycles;
             break;
         }

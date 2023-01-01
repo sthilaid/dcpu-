@@ -84,5 +84,5 @@ public:
     static bool ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode, uint16_t& outSpecialOp);
     static void ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, uint16_t& outWord, vector<LabelRef>& foundLabels);
     static vector<Instruction> ParseTokens(const vector<Token>& tokens);
-    static vector<Instruction> ParseLispAsm(char* filename);
+    static vector<Instruction> ParseLispAsm(const char* filename);
 };
