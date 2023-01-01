@@ -1,61 +1,22 @@
-;; add Hello World in video memory
+;; add "Hello World" in video memory
 
-(set c 0x8000)    ; start index
-
-(set push 0x48) ; chr H
-(set push 1)    ; bg
-(set push 0)    ; fb
-(jsr setchar)
-
-(set push 0x65)     ; chr e
-(set push 1)        ; bg
-(set push 0)        ; fb
-(jsr setchar)
-
-(set push 0x6C)     ; chr l
-(set push 1)        ; bg
-(set push 0)        ; fb
-(jsr setchar)
-
-(set push 0x6C)     ; chr l
-(set push 1)        ; bg
-(set push 0)        ; fb
-(jsr setchar)
-
-(set push 0x6F)     ; chr o
-(set push 1)        ; bg
-(set push 0)        ; fb
-(jsr setchar)
-
-(set push 0x20)     ; chr space
-(set push 1)        ; bg
-(set push 0)        ; fb
-(jsr setchar)
-
-(set push 0x57)     ; chr W
-(set push 1)        ; bg
-(set push 0)        ; fb
-(jsr setchar)
-
-(set push 0x6F)     ; chr o
-(set push 1)        ; bg
-(set push 0)        ; fb
-(jsr setchar)
-
-(set push 0x72)     ; chr r
-(set push 1)        ; bg
-(set push 0)        ; fb
-(jsr setchar)
-
-(set push 0x6C)     ; chr l
-(set push 1)        ; bg
-(set push 0)        ; fb
-(jsr setchar)
-
+(set push 0x0)      ; null terminated
 (set push 0x64)     ; chr d
+(set push 0x6C)     ; chr l
+(set push 0x72)     ; chr r
+(set push 0x6F)     ; chr o
+(set push 0x57)     ; chr W
+(set push 0x20)     ; chr space
+(set push 0x6F)     ; chr o
+(set push 0x6C)     ; chr l
+(set push 0x6C)     ; chr l
+(set push 0x65)     ; chr e
+(set push 0x48)     ; chr H
+(set push 10)       ; x
+(set push 6)        ; y
 (set push 1)        ; bg
 (set push 0)        ; fb
-(jsr setchar)
+(jsr setupDisplayString)
 
 ;; turn on monitor with memmap 0x8000
 (set a 0)
@@ -73,17 +34,29 @@
 (set pc halt)
 (set pc loop)
 
-(label setchar)
-(set j pop) ; ret addr
-(set a pop) ; fg
-(shl a 12)
-(set b pop) ; bg
-(shl b 8)
-(bor a b)
-(set b pop) ; chr
-(bor a b)
-(set (ref c) a)
-(add c 1) ; inc index
-(set pc j)
+;; copies null terminated str into video memory at chr coord (x,y)
+;; stack param: fg, bg, y, x, nullterminated string 
+(label setupDisplayString)
+(set j pop)     ; ret addr
+(set x pop)     ; fg
+(set y pop)     ; bg
+(set a pop)     ; y
+(mul a 32)      ; 32 chars per lines
+(add a pop)     ; +x
+(add a 0x8000)  ; add video mem start offset
+
+(label displayloop)
+(set b pop)     ; b := chr
+(ife b 0)
+(set pc j)      ; return on null char
+(set c x)       ; b := fg << 12 | chr
+(shl c 12)
+(bor b c)
+(set c y)       ; b := fg << 12 | bg << 8 | chr
+(shl c 8)
+(bor b c)
+(set (ref a) b)
+(add a 1) ; inc index
+(set pc displayloop)
 
 (label halt)
