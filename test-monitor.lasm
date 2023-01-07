@@ -16,6 +16,7 @@
 (set push 6)        ; y
 (set push 1)        ; bg
 (set push 0)        ; fb
+(set push 1)        ; blink?
 (jsr setupDisplayString)
 
 ;; turn on monitor with memmap 0x8000
@@ -38,6 +39,7 @@
 ;; stack param: fg, bg, y, x, nullterminated string 
 (label setupDisplayString)
 (set j pop)     ; ret addr
+(set z pop)     ; blink?
 (set x pop)     ; fg
 (set y pop)     ; bg
 (set a pop)     ; y
@@ -54,6 +56,9 @@
 (bor b c)
 (set c y)       ; b := fg << 12 | bg << 8 | chr
 (shl c 8)
+(bor b c)
+(set c z)       ; b := fg << 12 | bg << 8 | blink? << 7 | chr
+(shl c 7)
 (bor b c)
 (set (ref a) b)
 (add a 1) ; inc index

@@ -62,8 +62,9 @@ int TestCase::s_id = 0;
 
 bool TestCase::TryTest() const {
     std::basic_stringstream sourceStream{m_lasmSource};
-    vector<Token> tokens = LispAsmParser::Tokenize(sourceStream);
-    vector<Instruction> instructions = LispAsmParser::ParseTokens(tokens);
+    vector<Token> tokens = Token::Tokenize(sourceStream);
+    vector<SExp*> sexpressions = SExp::FromTokens(tokens);
+    vector<Instruction> instructions = LispAsmParser::FromSExpressions(sexpressions);
     vector<uint8_t> codebytes = Codex::UnpackBytes(Codex::Encode(instructions));
 
     int test_success = 0;
@@ -674,7 +675,11 @@ int main(int argc, char** argv) {
                    VerifyEqual(cpu.getCycles(), 29)
                    );
 
-    if (!shouldStop)
+    if (!shouldStop) {
         printf("All Tests Completed Successfully\n");
-    return 0;
+        return 0;
+    } else {
+        return 1; // error occured
+    }
+    
 }

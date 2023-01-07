@@ -28,6 +28,10 @@ private:
     static constexpr uint16_t Width = 128;
     static constexpr uint16_t Height = 96;
     static constexpr uint16_t RowWidth = Width / CharWidth;
+    static constexpr uint16_t PixelZoom = 4;
+    static constexpr float BlinkDelay = 0.5f;
+
+    using time = std::chrono::time_point<std::chrono::system_clock>;
 
     void initializeDefaults();
     void displayChr(uint16_t data, uint16_t i, uint16_t* pixels);
@@ -38,6 +42,8 @@ private:
     uint16_t m_memFontAddr = 0;
     uint16_t m_memPaletteAddr = 0;
     uint16_t m_borderColor = 0;
+    time m_blinkTime;
+    bool m_blinkSwap = false;
 
     static const uint16_t default_font[256];
     uint16_t m_defaultPalette[16];

@@ -4,9 +4,10 @@
 #include <dcpu-mem.h>
 #include <SDL.h>
 #include <cstdio>
-#include <random>
+// #include <random>
 #include <algorithm>
 
+// https://gist.github.com/SylvainBoilard/4645708
 const uint16_t Monitor::default_font[] = {
     0xb79e, 0x388e, 0x722c, 0x75f4, 0x19bb, 0x7f8f, 0x85f9, 0xb158,
     0x242e, 0x2400, 0x082a, 0x0800, 0x0008, 0x0000, 0x0808, 0x0808,
@@ -49,15 +50,16 @@ Monitor::Monitor()
     m_manifacturer = 0x1c6c8b36;    // NYA_ELEKTRISKA
 
     initializeDefaults();
+    m_blinkTime = std::chrono::system_clock::now();
 
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
         printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
     } else {
-        m_window = SDL_CreateWindow( "Monitor",
+        m_window = SDL_CreateWindow( "LEM1802 - Low Energy Monitor",
                                      SDL_WINDOWPOS_UNDEFINED,
                                      SDL_WINDOWPOS_UNDEFINED,
-                                     Width*4,
-                                     Height*4,
+                                     Width * PixelZoom,
+                                     Height * PixelZoom,
                                      SDL_WINDOW_SHOWN );
         if( m_window == nullptr ) {
             printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -107,11 +109,13 @@ void Monitor::initializeDefaults(){
 }
 
 void Monitor::displayChr(uint16_t data, uint16_t i, uint16_t* pixels){
-    const uint16_t fg = data >> 12;
-    const uint16_t bg = data == 0 ? 1 : 0xF & (data >> 8); // default pal[1] when no data
-    //const uint16_t blink = 0x1 & (data >> 7);
+    uint16_t fg = data >> 12;
+    uint16_t bg = data == 0 ? 1 : 0xF & (data >> 8); // default pal[1] when no data
+    const uint16_t blink = 0x1 & (data >> 7);
+    if (blink != 0 && m_blinkSwap) {
+        std::swap(fg, bg);
+    }
     const uint16_t chr = 0x7F & data;
-
     const uint16_t fgcolor = (m_defaultPalette[fg] << 4) | 0xF;
     const uint16_t bgcolor = (m_defaultPalette[bg] << 4) | 0xF;
     const uint16_t word0 = default_font[chr*2];
@@ -140,6 +144,15 @@ uint32_t Monitor::update(DCPU& cpu, Memory& mem) {
     if (m_renderer == nullptr || m_screenTexture == nullptr)
         return 0;
 
+    using secduration = std::chrono::duration<float>;
+    const time now = std::chrono::system_clock::now();
+    const secduration duration = (now - m_blinkTime);
+    const float dt = duration.count();
+    if (dt > BlinkDelay) {
+        m_blinkTime = now;
+        m_blinkSwap = !m_blinkSwap;
+    }
+
     uint16_t* pixels = nullptr;
     int pitch = 0;
     if (SDL_LockTexture(m_screenTexture, nullptr, (void**)&pixels, &pitch) != 0) {
@@ -147,16 +160,11 @@ uint32_t Monitor::update(DCPU& cpu, Memory& mem) {
         return 0;
     }
 
-    // static bool hackOnce = true;
-    // if (hackOnce) {
-    // hackOnce:
-        const uint16_t max = std::min(386, Memory::LastValidAddress+1 - m_memMapAddr);
-        for (uint16_t i=0; i<max; ++i) {
-            const uint16_t data = mem[m_memMapAddr + i];
-            displayChr(data, i, pixels);
-        }
-    //     hackOnce = false;
-    // }
+    const uint16_t max = std::min(386, Memory::LastValidAddress+1 - m_memMapAddr);
+    for (uint16_t i=0; i<max; ++i) {
+        const uint16_t data = mem[m_memMapAddr + i];
+        displayChr(data, i, pixels);
+    }
 
     SDL_UnlockTexture(m_screenTexture);
     
@@ -212,9 +220,13 @@ uint32_t Monitor::interrupt(DCPU& cpu, Memory& mem) {
 }
 
 void Monitor::dumpFontAtAddress(Memory& mem, uint16_t addr) const{
-    
+    for (uint16_t i=0; i<256; ++i) {
+        *(mem + addr) = default_font[i];
+    }
 }
 
 void Monitor::dumpPalletteAtAddress(Memory& mem, uint16_t addr) const{
-    
+    for (uint16_t i=0; i<16; ++i) {
+        *(mem + addr) = m_defaultPalette[i];
+    }
 }

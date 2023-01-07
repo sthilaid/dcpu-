@@ -1,123 +1,11 @@
 #include <dcpu-lispasm.h>
+#include <dcpu-sexp.h>
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
 
-string SExp::Val::toStr() const {
-    switch (m_type) {
-    case Number: return std::to_string(m_numVal);
-    case Symbol: return m_symVal;
-    case SExp: return m_sexpVal->toStr();
-    default:
-        dcpu_assert(false, "unhandled value type");
-        return nullptr;
-    }
-}
-
-void SExp::Delete(SExp* sexp) {
-    for (Val& v : sexp->m_values) {
-        if (v.m_type == Val::SExp) {
-            Delete(v.m_sexpVal);
-        }
-    }
-    delete sexp;
-}
-
-vector<SExp*> SExp::ParseSExpressions(const vector<Token>& tokens) {
-    vector<SExp*> expressions;
-    uint16_t i=0;
-    while (i<tokens.size()) {
-        expressions.push_back(ParseSExp(tokens, i));
-    }
-    return expressions;
-}
-
-SExp* SExp::ParseSExp(const vector<Token>& tokens, uint16_t& i) {
-    dcpu_assert_fmt(tokens.size()-i >= 2, "Expected more tokens. Left: %d, expecting 2", (tokens.size()-i));
-    dcpu_assert_fmt(tokens[i].Type == Token::LParen, "Expecting LParen as first sexp token, got %d", tokens[i].Type);
-    ++i;
-        
-    SExp* current = new SExp{};
-    while (i<tokens.size()) {
-        switch (tokens[i].Type) {
-        case Token::LParen: {
-            Val subExp{ParseSExp(tokens, i)};
-            current->m_values.push_back(subExp);
-            break;
-        }
-        case Token::RParen: {
-            ++i;
-            return current;
-        }
-        case Token::Number: {
-            Val n{tokens[i++].NumVal};
-            current->m_values.push_back(n);
-            break;
-        }
-        case Token::Symbol: {
-            Val s{tokens[i++].SymVal};
-            current->m_values.push_back(s);
-            break;
-        }
-        }
-    }
-    dcpu_assert(false, "Missing tokens to finish sexp");
-    return nullptr;
-}
-
-string SExp::toStr() const {
-    string str = "(";
-    for (int i=0; i<m_values.size(); ++i) {
-        str += m_values[i].toStr();
-        str += i<m_values.size()-1 ? " " : ")";
-    }
-    return str;
-}
-
-bool LispAsmParser::is_seperator(char c) {
-    switch (c) {
-    case ' ':
-    case '\t':
-        return true;
-    default:
-        return false;
-    }
-}
-
-vector<Token> LispAsmParser::Tokenize(std::basic_istream<char>& inputStream) {
-    vector<Token> tokens;
-    string current;
-    char c;
-    bool is_commenting = false;
-    while (true) {
-        inputStream.read(&c, 1);
-        if (inputStream.eof())
-            break; // need to check eof after the read call
-        
-        if (is_newline(c)) {
-            is_commenting = false;
-        } else if (is_commenting || c == ';') {
-            is_commenting = true;
-        } else if (c == '(' || c == ')') {
-            if (current != "") {
-                tokens.push_back(Token{current});
-                current = "";
-            }
-            tokens.push_back(Token{c});
-        } else if (is_seperator(c)) {
-            if (current != "") {
-                tokens.push_back(Token{current});
-                current = "";
-            }
-        } else {
-            current += c;
-        }
-    } 
-    return tokens;
-}
-
 bool LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode, uint16_t& outSpecialOp) {
-    dcpu_assert_fmt(val.m_type == SExp::Val::Symbol, "Expecting symbol token for opcode, got %d", val.m_type);
+    dcpu_assert_fmt(val.m_type == SExp::Val::Symbol, "Expecting symbol val for opcode, got %d", val.m_type);
     string upperOp = toUpcase(val.m_symVal);
     for (int i=0; i<SpecialOpCode_Count; ++i) {
         if (upperOp == SpecialOpCodeToStr(static_cast<SpecialOpCode>(i))) {
@@ -173,9 +61,9 @@ void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& ou
         dcpu_assert_fmt(val.m_sexpVal->m_values.size() >= 2, "Expecting at least 2 values in val sexp, got %d",
                         val.m_sexpVal->m_values.size());
         dcpu_assert_fmt(val.m_sexpVal->m_values[0].m_type == SExp::Val::Symbol,
-                        "Expecting first value of val sexp to be token, but found type %d", val.m_sexpVal->m_values[0].m_type);
+                        "Expecting first value of val sexp to be symbol, but found type %d", val.m_sexpVal->m_values[0].m_type);
         dcpu_assert_fmt(toUpcase(val.m_sexpVal->m_values[0].m_symVal) == "REF",
-                        "Expecting REF first sym token, but found: %s", val.m_sexpVal->m_values[0].m_symVal.c_str());
+                        "Expecting REF first sym value, but found: %s", val.m_sexpVal->m_values[0].m_symVal.c_str());
 
         refval:
         outWord = 0;
@@ -226,12 +114,12 @@ uint16_t GetAddr(const vector<Instruction>& instructions) {
     return addr;
 }
 
-vector<Instruction> LispAsmParser::ParseTokens(const vector<Token>& tokens) {
+vector<Instruction> LispAsmParser::FromSExpressions(const vector<SExp*>& sexpressions) {
     vector<LabelEnv> labels;
     vector<LabelRef> labelRefs;
     vector<Instruction> instructions;
-    instructions.reserve(tokens.size()); // way too much but ensures stable memory, for label refs
-    vector<SExp*> sexpressions = SExp::ParseSExpressions(tokens);
+    instructions.reserve(sexpressions.size()); // way too much but ensures stable memory, for label refs
+
     for (SExp* sexp : sexpressions) {
         if (sexp->m_values.size() == 2
             && sexp->m_values[0].m_type == SExp::Val::Symbol
@@ -284,7 +172,8 @@ vector<Instruction> LispAsmParser::ParseLispAsm(const char* filename){
         printf("unknown file: %s\n", filename);
         return vector<Instruction>();
     }
-    vector<Token> tokens = LispAsmParser::Tokenize(inputStream);
-    vector<Instruction> instructions = LispAsmParser::ParseTokens(tokens);
+    vector<Token> tokens = Token::Tokenize(inputStream);
+    vector<SExp*> sexpressions = SExp::FromTokens(tokens);
+    vector<Instruction> instructions = LispAsmParser::FromSExpressions(sexpressions);
     return instructions;
 }
