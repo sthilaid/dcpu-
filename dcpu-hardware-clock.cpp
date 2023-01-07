@@ -13,7 +13,7 @@ Clock::Clock()
     m_manifacturer = 0x0FE124C0;   // FEIZAC
 }
 
-uint32_t Clock::update(DCPU& cpu, Memory& mem) {
+cycles_t Clock::update(DCPU& cpu, Memory& mem) {
     if (m_period == 0)
         return 0;
 
@@ -33,9 +33,9 @@ uint32_t Clock::update(DCPU& cpu, Memory& mem) {
     return 1;
 }
 
-uint32_t Clock::interrupt(DCPU& cpu, Memory& mem) {
-    const uint16_t a = cpu.getRegister(Registers_A);
-    const uint16_t b = cpu.getRegister(Registers_B);
+cycles_t Clock::interrupt(DCPU& cpu, Memory& mem) {
+    const word_t a = cpu.getRegister(Registers_A);
+    const word_t b = cpu.getRegister(Registers_B);
     switch (a) {
     case 0: {
         m_period = b;

@@ -2,6 +2,7 @@
 #include <istream>
 #include <vector>
 #include <string>
+#include <dcpu-types.h>
 
 using std::string;
 using std::vector;
@@ -15,7 +16,7 @@ struct Token {
     };
 
     TokenType Type = LParen;
-    uint16_t NumVal = 0;
+    word_t NumVal = 0;
     string SymVal = "";
 
     Token();

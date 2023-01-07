@@ -25,11 +25,7 @@ int main(int argc, char** args) {
     for (const Instruction& i : instructions) {
         printf("parsed: %s\n", i.toStr().c_str());
     }
-
-    for (SExp* sexp : expressions) {
-        SExp::Delete(sexp);
-    }
-    expressions.clear();
+    SExp::Delete(expressions);
 
     return 0;
 }

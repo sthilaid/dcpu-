@@ -1,9 +1,21 @@
 #pragma once
 
+#include <cstdint>
 #include <algorithm>
 #include <cassert>
 #include <string>
 using std::string;
+
+namespace dcpu {
+    using byte_t = uint8_t;
+    using word_t = uint16_t;
+    using signed_word_t = int16_t;
+    using cycles_t = uint32_t;
+    using long_t = uint32_t;
+    using deviceIdx_t = uint16_t;
+}
+
+using namespace dcpu;
 
 enum Value {
     Value_Register_A = 0x00,
@@ -94,12 +106,12 @@ struct Instruction
     OpCode m_opcode = OpCode_Count;
     Value m_a = Value_Count;
     Value m_b = Value_Count;
-    uint16_t m_wordA = 0;
-    uint16_t m_wordB = 0;
+    word_t m_wordA = 0;
+    word_t m_wordB = 0;
 
     Instruction();
-    Instruction(OpCode op, Value b, Value a, uint16_t wordB=0, uint16_t wordA=0);
-    uint8_t WordCount() const;
+    Instruction(OpCode op, Value b, Value a, word_t wordB=0, word_t wordA=0);
+    byte_t WordCount() const;
     string toStr() const;
 };
 
@@ -128,7 +140,7 @@ inline Instruction::Instruction()
 {    
 }
 
-inline Instruction::Instruction(OpCode op, Value b, Value a, uint16_t wordB, uint16_t wordA)
+inline Instruction::Instruction(OpCode op, Value b, Value a, word_t wordB, word_t wordA)
     : m_opcode { op }
     , m_a { a }
     , m_b { b }
@@ -137,7 +149,7 @@ inline Instruction::Instruction(OpCode op, Value b, Value a, uint16_t wordB, uin
 {
 }
 
-inline uint8_t Instruction::WordCount() const {
+inline byte_t Instruction::WordCount() const {
     const bool isSpecial = m_opcode == OpCode_Special;
     if (isSpecial) {
         return 1 + (isMultibyteValue(m_a) ? 1 : 0);
@@ -146,9 +158,9 @@ inline uint8_t Instruction::WordCount() const {
     }
 }
 
-inline string ValueToStr(Value v, bool isA, uint16_t nextword){
+inline string ValueToStr(Value v, bool isA, word_t nextword){
     if (isA) {
-        const uint16_t numV = static_cast<uint16_t>(v);
+        const word_t numV = static_cast<word_t>(v);
         if (numV >= 0x20) {
             if (numV == 0x3F)
                 return std::to_string(-1);
@@ -227,7 +239,7 @@ inline string SpecialOpCodeToStr(SpecialOpCode op) {
     }
 }
 
-inline string OpCodeToStr(OpCode op, uint16_t b=0xFFFF){
+inline string OpCodeToStr(OpCode op, word_t b=0xFFFF){
     switch (op) {
     case OpCode_Special:
         return SpecialOpCodeToStr(static_cast<SpecialOpCode>(b));

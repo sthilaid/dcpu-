@@ -22,14 +22,14 @@ void testEncodeDecode() {
         printf("%s\n", i.toStr().c_str());
     }
     
-    vector<uint16_t> binary = Codex::Encode(instructions);
-    for (uint16_t b : binary) {
+    vector<word_t> binary = Codex::Encode(instructions);
+    for (word_t b : binary) {
         printf("0x%04X, ", b);
     }
     printf("\n");
 
-    vector<uint8_t> unpackedBinary = Codex::UnpackBytes(binary);
-    for (uint8_t b : unpackedBinary) {
+    vector<byte_t> unpackedBinary = Codex::UnpackBytes(binary);
+    for (byte_t b : unpackedBinary) {
         printf("0x%02X, ", b);
     }
     printf("\n");
@@ -61,14 +61,14 @@ int main(int argc, char** args) {
 
     vector<Instruction> instructions = LispAsmParser::ParseLispAsm(infile.c_str());
 
-    vector<uint16_t> rawcode;
+    vector<word_t> rawcode;
     std::ofstream binFileStream(outfile.c_str(), std::ios::binary);
 
     printf("comiling instructions:\n");
     for(const Instruction& i : instructions) printf("  %s\n", i.toStr().c_str());
-    vector<uint16_t> codebytes = Codex::Encode(instructions);
-    vector<uint8_t> rawdata = Codex::UnpackBytes(codebytes);
-    for (uint8_t d : rawdata) {
+    vector<word_t> codebytes = Codex::Encode(instructions);
+    vector<byte_t> rawdata = Codex::UnpackBytes(codebytes);
+    for (byte_t d : rawdata) {
         binFileStream.write(reinterpret_cast<char*>(&d), 1);
     }
     

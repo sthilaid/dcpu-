@@ -7,14 +7,14 @@ TesterDevice::TesterDevice() {
     
 }
 
-uint32_t TesterDevice::update(DCPU& cpu, Memory& mem) {
+cycles_t TesterDevice::update(DCPU& cpu, Memory& mem) {
     return 0;
 }
 
-uint32_t TesterDevice::interrupt(DCPU& cpu, Memory& mem) {
-    const uint16_t a = cpu.getRegister(Registers_A);
+cycles_t TesterDevice::interrupt(DCPU& cpu, Memory& mem) {
+    const word_t a = cpu.getRegister(Registers_A);
     if (m_lastkey != 0) {
-        const uint16_t res = a == m_lastkey ? 123 : 0xFFFF;
+        const word_t res = a == m_lastkey ? 123 : 0xFFFF;
         cpu.setSP(cpu.getSP() - 1);
         mem[cpu.getSP()] = res;
         m_lastkey = 0;
@@ -25,7 +25,7 @@ uint32_t TesterDevice::interrupt(DCPU& cpu, Memory& mem) {
             std::random_device rd;
             std::mt19937 gen(rd());
             std::uniform_int_distribution<> distrib(0, 255);
-            m_lastkey = static_cast<uint16_t>(distrib(gen));
+            m_lastkey = static_cast<word_t>(distrib(gen));
             cpu.setRegister(Registers_X, m_lastkey);
             cpu.interrupt(m_id);
             break;

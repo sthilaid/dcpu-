@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <fstream>
 
-bool LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode, uint16_t& outSpecialOp) {
+bool LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode, word_t& outSpecialOp) {
     dcpu_assert_fmt(val.m_type == SExp::Val::Symbol, "Expecting symbol val for opcode, got %d", val.m_type);
     string upperOp = toUpcase(val.m_symVal);
     for (int i=0; i<SpecialOpCode_Count; ++i) {
@@ -25,7 +25,7 @@ bool LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode,
     return false;
 }
 
-void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, uint16_t& outWord,
+void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& out, word_t& outWord,
                                        vector<LabelRef>& labelRefs) {
     switch (val.m_type) {
     case SExp::Val::Number: {
@@ -107,8 +107,8 @@ void LispAsmParser::ParseValueFromSexp(const SExp::Val& val, bool isA, Value& ou
     }
 }
 
-uint16_t GetAddr(const vector<Instruction>& instructions) {
-    uint16_t addr = 0;
+word_t GetAddr(const vector<Instruction>& instructions) {
+    word_t addr = 0;
     for (const Instruction& i : instructions)
         addr += i.WordCount();
     return addr;
@@ -134,7 +134,7 @@ vector<Instruction> LispAsmParser::FromSExpressions(const vector<SExp*>& sexpres
                         sexp->m_values.size(), sexp->toStr().c_str());
 
         Instruction& inst = instructions.emplace_back();
-        uint16_t specialOpCode = 0;
+        word_t specialOpCode = 0;
         const bool isSpecialOp = ParseOpCodeFromSexp(sexp->m_values[0], inst.m_opcode, specialOpCode);
         if (isSpecialOp) {
             dcpu_assert_fmt(sexp->m_values.size() == 2,
@@ -149,8 +149,6 @@ vector<Instruction> LispAsmParser::FromSExpressions(const vector<SExp*>& sexpres
             ParseValueFromSexp(sexp->m_values[1], false, inst.m_b, inst.m_wordB, labelRefs);
             ParseValueFromSexp(sexp->m_values[2], true, inst.m_a, inst.m_wordA, labelRefs);
         }
-
-        SExp::Delete(sexp);
     }
 
  AssignLabelRefs:
@@ -173,7 +171,9 @@ vector<Instruction> LispAsmParser::ParseLispAsm(const char* filename){
         return vector<Instruction>();
     }
     vector<Token> tokens = Token::Tokenize(inputStream);
-    vector<SExp*> sexpressions = SExp::FromTokens(tokens);
-    vector<Instruction> instructions = LispAsmParser::FromSExpressions(sexpressions);
+    vector<SExp*> expressions = SExp::FromTokens(tokens);
+    vector<Instruction> instructions = LispAsmParser::FromSExpressions(expressions);
+    SExp::Delete(expressions);
+
     return instructions;
 }

@@ -11,8 +11,8 @@ class Monitor : public Hardware {
 public:
     Monitor();
     ~Monitor() override;
-    uint32_t update(DCPU& cpu, Memory& mem) override;
-    uint32_t interrupt(DCPU& cpu, Memory& mem) override;
+    cycles_t update(DCPU& cpu, Memory& mem) override;
+    cycles_t interrupt(DCPU& cpu, Memory& mem) override;
 
 private:
     enum InterruptCommands {
@@ -23,30 +23,30 @@ private:
         MEM_DUMP_FONT = 4,
         MEM_DUMP_PALETTE = 5,
     };
-    static constexpr uint16_t CharWidth = 4;
-    static constexpr uint16_t CharHeight = 8;
-    static constexpr uint16_t Width = 128;
-    static constexpr uint16_t Height = 96;
-    static constexpr uint16_t RowWidth = Width / CharWidth;
-    static constexpr uint16_t PixelZoom = 4;
+    static constexpr word_t CharWidth = 4;
+    static constexpr word_t CharHeight = 8;
+    static constexpr word_t Width = 128;
+    static constexpr word_t Height = 96;
+    static constexpr word_t RowWidth = Width / CharWidth;
+    static constexpr word_t PixelZoom = 4;
     static constexpr float BlinkDelay = 0.5f;
 
     using time = std::chrono::time_point<std::chrono::system_clock>;
 
     void initializeDefaults();
-    void displayChr(uint16_t data, uint16_t i, uint16_t* pixels);
-    void dumpFontAtAddress(Memory& mem, uint16_t addr) const;
-    void dumpPalletteAtAddress(Memory& mem, uint16_t addr) const;
+    void displayChr(word_t data, word_t i, word_t* pixels);
+    void dumpFontAtAddress(Memory& mem, word_t addr) const;
+    void dumpPalletteAtAddress(Memory& mem, word_t addr) const;
     
-    uint16_t m_memMapAddr = 0;
-    uint16_t m_memFontAddr = 0;
-    uint16_t m_memPaletteAddr = 0;
-    uint16_t m_borderColor = 0;
+    word_t m_memMapAddr = 0;
+    word_t m_memFontAddr = 0;
+    word_t m_memPaletteAddr = 0;
+    word_t m_borderColor = 0;
     time m_blinkTime;
     bool m_blinkSwap = false;
 
-    static const uint16_t default_font[256];
-    uint16_t m_defaultPalette[16];
+    static const word_t default_font[256];
+    word_t m_defaultPalette[16];
 
     SDL_Window* m_window = nullptr;
     SDL_Renderer* m_renderer = nullptr;

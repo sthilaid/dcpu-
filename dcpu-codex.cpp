@@ -3,30 +3,30 @@
 
 #define NDEBUG
 
-void pushTo8BitLittleEndian(uint16_t val, vector<uint8_t>& bytes){
-    uint8_t littleEnd = 0xFF & val;
-    uint8_t bigEnd = val >> 8;
+void pushTo8BitLittleEndian(word_t val, vector<byte_t>& bytes){
+    byte_t littleEnd = 0xFF & val;
+    byte_t bigEnd = val >> 8;
     bytes.push_back(littleEnd);
     bytes.push_back(bigEnd);
 }
 
-uint16_t from8BitLittleEndian(const vector<uint8_t>& buffer, uint16_t& i) {
+word_t from8BitLittleEndian(const vector<byte_t>& buffer, word_t& i) {
     assert(i < buffer.size()-1);
     
-    uint8_t littleEnd = buffer[i];
-    uint8_t bigEnd = buffer[i+1];
+    byte_t littleEnd = buffer[i];
+    byte_t bigEnd = buffer[i+1];
     i += 2;
     // printf("little:: %02X big: %02X, raw: %04X\n", littleEnd, bigEnd, (bigEnd << 8) | littleEnd);
     return (bigEnd << 8) | littleEnd;
 }
 
-vector<uint16_t> Codex::Encode(const vector<Instruction>& instructions){
-    vector<uint16_t> codeBuffer;
+vector<word_t> Codex::Encode(const vector<Instruction>& instructions){
+    vector<word_t> codeBuffer;
     for (const Instruction& inst : instructions){
-        const uint16_t opcode = inst.m_opcode;
-        const uint16_t a = inst.m_a;
-        const uint16_t b = inst.m_b;
-        const uint16_t binaryInstruction = (a << 0xA) | (b << 0x5) | opcode;
+        const word_t opcode = inst.m_opcode;
+        const word_t a = inst.m_a;
+        const word_t b = inst.m_b;
+        const word_t binaryInstruction = (a << 0xA) | (b << 0x5) | opcode;
         codeBuffer.push_back(binaryInstruction);
 
         if (isMultibyteValue(inst.m_a)) {
@@ -40,28 +40,28 @@ vector<uint16_t> Codex::Encode(const vector<Instruction>& instructions){
     return codeBuffer;
 }
 
-vector<uint8_t> Codex::UnpackBytes(const vector<uint16_t>& buffer){
-    vector<uint8_t> unpackedBuffer;
-    for (uint16_t i=0; i<buffer.size(); ++i) {
+vector<byte_t> Codex::UnpackBytes(const vector<word_t>& buffer){
+    vector<byte_t> unpackedBuffer;
+    for (word_t i=0; i<buffer.size(); ++i) {
         pushTo8BitLittleEndian(buffer[i], unpackedBuffer);
     }
     return unpackedBuffer;
 }
 
-vector<uint16_t> Codex::PackBytes(const vector<uint8_t>& buffer){
-    vector<uint16_t> packedBuffer;
-    for (uint16_t i=0; i<buffer.size()-1;) {
+vector<word_t> Codex::PackBytes(const vector<byte_t>& buffer){
+    vector<word_t> packedBuffer;
+    for (word_t i=0; i<buffer.size()-1;) {
         packedBuffer.push_back(from8BitLittleEndian(buffer, i));
     }
     return packedBuffer;
 }
 
-Instruction Codex::Decode(const uint16_t* codebytePtr, uint32_t maxlen){
+Instruction Codex::Decode(const word_t* codebytePtr, word_t maxlen){
     assert(codebytePtr != nullptr);
     
-    uint8_t instructionSize = 1;
+    byte_t instructionSize = 1;
     Instruction inst;
-    uint16_t codebyte = *codebytePtr;
+    word_t codebyte = *codebytePtr;
     inst.m_opcode = static_cast<OpCode>(codebyte & 0x1F);
     inst.m_a = static_cast<Value>(codebyte >> 0xA);
     inst.m_b = static_cast<Value>((codebyte >> 0x5) & 0x1F);
@@ -81,10 +81,10 @@ Instruction Codex::Decode(const uint16_t* codebytePtr, uint32_t maxlen){
     return inst;
 }
 
-vector<Instruction> Codex::Decode(const vector<uint16_t>& buffer){
+vector<Instruction> Codex::Decode(const vector<word_t>& buffer){
     vector<Instruction> instructions;
-    for (uint16_t i=0; i<buffer.size();) {
-        uint16_t raw = buffer[i];
+    for (word_t i=0; i<buffer.size();) {
+        word_t raw = buffer[i];
         instructions.push_back(Decode(&buffer[i], buffer.size() - i));
         i += instructions.back().WordCount();
     }

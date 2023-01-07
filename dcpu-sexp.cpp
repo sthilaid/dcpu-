@@ -22,16 +22,23 @@ void SExp::Delete(SExp* sexp) {
     delete sexp;
 }
 
+void SExp::Delete(vector<SExp*>& expressions){
+    for (SExp* exp : expressions) {
+        SExp::Delete(exp);
+    }
+    expressions.clear();
+}
+
 vector<SExp*> SExp::FromTokens(const vector<Token>& tokens) {
     vector<SExp*> expressions;
-    uint16_t i=0;
+    word_t i=0;
     while (i<tokens.size()) {
         expressions.push_back(FromTokens(tokens, i));
     }
     return expressions;
 }
 
-SExp* SExp::FromTokens(const vector<Token>& tokens, uint16_t& i) {
+SExp* SExp::FromTokens(const vector<Token>& tokens, word_t& i) {
     dcpu_assert_fmt(tokens.size()-i >= 2, "Expected more tokens. Left: %d, expecting 2", (tokens.size()-i));
     dcpu_assert_fmt(tokens[i].Type == Token::LParen, "Expecting LParen as first sexp token, got %d", tokens[i].Type);
     ++i;

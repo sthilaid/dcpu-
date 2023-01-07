@@ -1,5 +1,4 @@
 #include <dcpu.h>
-#include <dcpu-assert.h>
 #include <dcpu-codex.h>
 #include <cassert>
 #include <dcpu-mem.h>
@@ -14,8 +13,8 @@ DCPU::DCPU()
     memset(&m_registers, 0, Registers_Count*2);
 }
 
-uint16_t* DCPU::getAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord, uint8_t& inOutCycles) {
-    const uint16_t numV = static_cast<uint16_t>(v);
+word_t* DCPU::getAddrPtr(Memory& mem, bool isA, Value v, word_t& extraWord, cycles_t& inOutCycles) {
+    const word_t numV = static_cast<word_t>(v);
     if (isA && numV >= 0x20) {
         if (numV == 0x3F) {
             extraWord = 0xFFFF;
@@ -26,7 +25,7 @@ uint16_t* DCPU::getAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord, 
         // the Instruction instance) to save the inplace A value;
         return &extraWord;
     }
-    const int16_t signedOffset = static_cast<int16_t>(extraWord);
+    const signed_word_t signedOffset = static_cast<signed_word_t>(extraWord);
     switch (v) {
     case Value_Register_A: return &m_registers[Registers_A];
     case Value_Register_B: return &m_registers[Registers_B];
@@ -66,18 +65,18 @@ uint16_t* DCPU::getAddrPtr(Memory& mem, bool isA, Value v, uint16_t& extraWord, 
     }
 }
 
-uint16_t GetNextCodeAddress(Memory& mem, uint16_t pc) {
+word_t GetNextCodeAddress(Memory& mem, word_t pc) {
     Instruction currentInstruction = Codex::Decode(mem+pc, mem.LastValidAddress-pc);
-    const uint8_t currentWordCount = currentInstruction.WordCount();
+    const word_t currentWordCount = currentInstruction.WordCount();
     return pc + currentWordCount;
 }
 
-uint16_t GetNextCodeAddressSkipIF(Memory& mem, uint16_t pc, uint16_t& outSkippedInstructionsCount) {
-    uint16_t nextPC = pc;
+word_t GetNextCodeAddressSkipIF(Memory& mem, word_t pc, word_t& outSkippedInstructionsCount) {
+    word_t nextPC = pc;
     bool foundNext = false;
     while (!foundNext && pc <= Memory::LastValidAddress) {
         Instruction currentInstruction = Codex::Decode(mem+nextPC, mem.LastValidAddress-nextPC);
-        const uint8_t currentWordCount = currentInstruction.WordCount();
+        const word_t currentWordCount = currentInstruction.WordCount();
         nextPC += currentWordCount;
         ++outSkippedInstructionsCount;
 
@@ -101,12 +100,12 @@ uint16_t GetNextCodeAddressSkipIF(Memory& mem, uint16_t pc, uint16_t& outSkipped
 }
 
 
-uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
+cycles_t DCPU::eval(Memory& mem, Instruction& inst) {
     //printf("evaluating mem[0x%04X]: %s\n", m_pc, inst.toStr().c_str());
-    uint8_t cycles = 0;
+    cycles_t cycles = 0;
     const bool isSpecialOp = inst.m_opcode == OpCode_Special;
-    uint16_t* a_addr = getAddrPtr(mem, true, inst.m_a, inst.m_wordA, cycles);
-    uint16_t* b_addr= isSpecialOp ? nullptr : getAddrPtr(mem, false, inst.m_b, inst.m_wordB, cycles);
+    word_t* a_addr = getAddrPtr(mem, true, inst.m_a, inst.m_wordA, cycles);
+    word_t* b_addr= isSpecialOp ? nullptr : getAddrPtr(mem, false, inst.m_b, inst.m_wordB, cycles);
     
     switch (inst.m_opcode) {
     case OpCode_Special:{
@@ -115,7 +114,7 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
         switch (specialOp) {
         case SpecialOpCode_JSR: {
             cycles += 3;
-            const uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
+            const word_t nextPC = GetNextCodeAddress(mem, m_pc);
             *(mem + (--m_sp)) = nextPC;
             m_pc = *a_addr;
             break;
@@ -127,7 +126,7 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
                     m_queuedInterrupts.push(*a_addr);
                 } else {
                     m_isInterruptQueueActive = true;
-                    const uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
+                    const word_t nextPC = GetNextCodeAddress(mem, m_pc);
                     *(mem + (--m_sp)) = nextPC;
                     *(mem + (--m_sp)) = m_registers[Registers_A];;
                     m_pc = m_ia;
@@ -161,33 +160,33 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
         }
         case SpecialOpCode_HWN: {
             cycles += 2;
-            m_registers[Registers_A] = static_cast<uint16_t>(m_devices.size());
+            m_registers[Registers_A] = static_cast<word_t>(m_devices.size());
             break;
         }
         case SpecialOpCode_HWQ: {
             cycles += 4;
-            uint16_t deviceIndex = *a_addr;
+            word_t deviceIndex = *a_addr;
             dcpu_assert_fmt(deviceIndex < m_devices.size(), "device index %d larger then number of devices (%d)",
                             deviceIndex, m_devices.size());
             dcpu_assert_fmt(m_devices[deviceIndex] != nullptr, "device index %d was nullptr", deviceIndex);
 
-            const uint32_t id = m_devices[deviceIndex]->getId();
-            const uint16_t version = m_devices[deviceIndex]->getVersion();
-            const uint32_t manif = m_devices[deviceIndex]->getManifacturer();
-            m_registers[Registers_A] = static_cast<uint16_t>(0xFFFF & id);
-            m_registers[Registers_B] = static_cast<uint16_t>(0xFFFF & (id >> 16));
+            const long_t id = m_devices[deviceIndex]->getId();
+            const word_t version = m_devices[deviceIndex]->getVersion();
+            const long_t manif = m_devices[deviceIndex]->getManifacturer();
+            m_registers[Registers_A] = static_cast<word_t>(0xFFFF & id);
+            m_registers[Registers_B] = static_cast<word_t>(0xFFFF & (id >> 16));
             m_registers[Registers_C] = version;
-            m_registers[Registers_X] = static_cast<uint16_t>(0xFFFF & manif);
-            m_registers[Registers_Y] = static_cast<uint16_t>(0xFFFF & (manif >> 16));
+            m_registers[Registers_X] = static_cast<word_t>(0xFFFF & manif);
+            m_registers[Registers_Y] = static_cast<word_t>(0xFFFF & (manif >> 16));
             break;
         }
         case SpecialOpCode_HWI: {
-            const uint16_t deviceIndex = *a_addr;
+            const word_t deviceIndex = *a_addr;
             dcpu_assert_fmt(deviceIndex < m_devices.size(), "device index %d larger then number of devices (%d)",
                             deviceIndex, m_devices.size());
             dcpu_assert_fmt(m_devices[deviceIndex] != nullptr, "device index %d was nullptr", deviceIndex);
 
-            const uint32_t intCycles = m_devices[deviceIndex]->interrupt(*this, mem);
+            const cycles_t intCycles = m_devices[deviceIndex]->interrupt(*this, mem);
             cycles += 4 + intCycles;
             break;
         }
@@ -201,15 +200,15 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_ADD:{
         cycles += 2;
-        uint16_t res =  *b_addr + *a_addr;
+        word_t res =  *b_addr + *a_addr;
         *b_addr = res;
         m_ex = (res < *a_addr || res < *b_addr) ? 1 : 0;
         break;
     }
     case OpCode_SUB:{
         cycles += 2;
-        uint16_t b = *b_addr;
-        uint16_t res = b - *a_addr;
+        word_t b = *b_addr;
+        word_t res = b - *a_addr;
         *b_addr = res;
         m_ex = res > b ? 0xFFFF : 0;
         break;
@@ -217,16 +216,16 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
     case OpCode_MUL:{
         cycles += 2;
         OpCode_MUL:
-        uint32_t res = *b_addr * *a_addr;
-        *b_addr = static_cast<uint16_t>(0xFFFF & res);
-        m_ex = static_cast<uint16_t>((res>>16) & 0xFFFF);
+        long_t res = *b_addr * *a_addr;
+        *b_addr = static_cast<word_t>(0xFFFF & res);
+        m_ex = static_cast<word_t>((res>>16) & 0xFFFF);
         break;
     }
     case OpCode_MLI:{
         cycles += 2;
-        int32_t res = *b_addr * *a_addr;
-        *b_addr = static_cast<uint16_t>(0xFFFF & res);
-        m_ex = static_cast<int16_t>((res>>16) & 0xFFFF);
+        long_t res = *b_addr * *a_addr;
+        *b_addr = static_cast<word_t>(0xFFFF & res);
+        m_ex = static_cast<signed_word_t>((res>>16) & 0xFFFF);
         break;
     }
     case OpCode_DIV: {
@@ -235,10 +234,10 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
         if (*a_addr == 0) {
             *b_addr = m_ex = 0;
         } else {
-            uint16_t b = *b_addr;
-            uint32_t res = b / *a_addr;
-            *b_addr = static_cast<uint16_t>(0xFFFF & res);
-            m_ex = static_cast<uint16_t>(((static_cast<uint32_t>(b) << 16) / *a_addr) & 0xFFFF);
+            word_t b = *b_addr;
+            long_t res = b / *a_addr;
+            *b_addr = static_cast<word_t>(0xFFFF & res);
+            m_ex = static_cast<word_t>(((static_cast<long_t>(b) << 16) / *a_addr) & 0xFFFF);
         }
         break;
     }
@@ -247,9 +246,9 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
         if (*a_addr == 0) {
             *b_addr = m_ex = 0;
         } else {
-            int32_t res = static_cast<int32_t>(*b_addr) / static_cast<int32_t>(*a_addr);
-            *b_addr = static_cast<uint16_t>(0xFFFF & res);
-            m_ex = static_cast<uint16_t>(((*b_addr << 16) / *a_addr) & 0xFFFF);
+            long_t res = static_cast<long_t>(*b_addr) / static_cast<long_t>(*a_addr);
+            *b_addr = static_cast<word_t>(0xFFFF & res);
+            m_ex = static_cast<word_t>(((*b_addr << 16) / *a_addr) & 0xFFFF);
         }
         break;
     }
@@ -267,7 +266,7 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
         if (*a_addr == 0) {
             *b_addr = m_ex = 0;
         } else {
-            *b_addr = static_cast<uint16_t>(static_cast<int16_t>(*b_addr) % static_cast<int16_t>(*a_addr));
+            *b_addr = static_cast<word_t>(static_cast<signed_word_t>(*b_addr) % static_cast<signed_word_t>(*a_addr));
         }
         break;
     }
@@ -289,31 +288,31 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_SHR: {
         cycles += 1;
-        const uint16_t b = *b_addr;
+        const word_t b = *b_addr;
         *b_addr = b >> *a_addr;
-        m_ex = ((static_cast<uint32_t>(b)<<16) >> *a_addr) & 0xFFFF;
+        m_ex = ((static_cast<long_t>(b)<<16) >> *a_addr) & 0xFFFF;
         break;
     }
     case OpCode_ASR: {
         cycles += 1;
         OpCode_ASR:
-        const uint16_t b = *b_addr;
-        *b_addr = static_cast<uint16_t>(static_cast<int16_t>(b) >> *a_addr);
-        m_ex = ((static_cast<uint32_t>(b)<<16) >> *a_addr) & 0xFFFF;
+        const word_t b = *b_addr;
+        *b_addr = static_cast<word_t>(static_cast<signed_word_t>(b) >> *a_addr);
+        m_ex = ((static_cast<long_t>(b)<<16) >> *a_addr) & 0xFFFF;
         break;
     }
     case OpCode_SHL:{
         cycles += 1;
-        const uint16_t b = *b_addr;
+        const word_t b = *b_addr;
         *b_addr = b << *a_addr;
-        m_ex = ((static_cast<uint32_t>(b)<<16) >> *a_addr) & 0xFFFF;
+        m_ex = ((static_cast<long_t>(b)<<16) >> *a_addr) & 0xFFFF;
         break;
     }
     case OpCode_IFB: {
         OpCode_IFB:
         if ((*b_addr & *a_addr) == 0) {
-            uint16_t skippedCount = 0;
-            uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
+            word_t skippedCount = 0;
+            word_t nextPC = GetNextCodeAddress(mem, m_pc);
             nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
             cycles += 2 + skippedCount;
@@ -324,8 +323,8 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_IFC: {
         if ((*b_addr & *a_addr) != 0) {
-            uint16_t skippedCount = 0;
-            uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
+            word_t skippedCount = 0;
+            word_t nextPC = GetNextCodeAddress(mem, m_pc);
             nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
             cycles += 2 + skippedCount;
@@ -336,8 +335,8 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_IFE: {
         if (*b_addr != *a_addr) {
-            uint16_t skippedCount = 0;
-            uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
+            word_t skippedCount = 0;
+            word_t nextPC = GetNextCodeAddress(mem, m_pc);
             nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
             cycles += 2 + skippedCount;
@@ -349,8 +348,8 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
     case OpCode_IFN: {
         test:
         if (*b_addr == *a_addr) {
-            uint16_t skippedCount = 0;
-            uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
+            word_t skippedCount = 0;
+            word_t nextPC = GetNextCodeAddress(mem, m_pc);
             nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
             cycles += 2 + skippedCount;
@@ -361,8 +360,8 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_IFG: {
         if (*b_addr <= *a_addr) {
-            uint16_t skippedCount = 0;
-            uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
+            word_t skippedCount = 0;
+            word_t nextPC = GetNextCodeAddress(mem, m_pc);
             nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
             cycles += 2 + skippedCount;
@@ -372,9 +371,9 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
         break;
     }
     case OpCode_IFA: {
-        if (static_cast<int16_t>(*b_addr) <= static_cast<int16_t>(*a_addr)) {
-            uint16_t skippedCount = 0;
-            uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
+        if (static_cast<signed_word_t>(*b_addr) <= static_cast<signed_word_t>(*a_addr)) {
+            word_t skippedCount = 0;
+            word_t nextPC = GetNextCodeAddress(mem, m_pc);
             nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
             cycles += 2 + skippedCount;
@@ -385,8 +384,8 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
     }
     case OpCode_IFL: {
         if (*b_addr >= *a_addr) {
-            uint16_t skippedCount = 0;
-            uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
+            word_t skippedCount = 0;
+            word_t nextPC = GetNextCodeAddress(mem, m_pc);
             nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
             cycles += 2 + skippedCount;
@@ -396,9 +395,9 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
         break;
     }
     case OpCode_IFU: {
-        if (static_cast<int16_t>(*b_addr) >= static_cast<int16_t>(*a_addr)) {
-            uint16_t skippedCount = 0;
-            uint16_t nextPC = GetNextCodeAddress(mem, m_pc);
+        if (static_cast<signed_word_t>(*b_addr) >= static_cast<signed_word_t>(*a_addr)) {
+            word_t skippedCount = 0;
+            word_t nextPC = GetNextCodeAddress(mem, m_pc);
             nextPC = GetNextCodeAddressSkipIF(mem, nextPC, skippedCount);
             m_pc = nextPC;
             cycles += 2 + skippedCount;
@@ -410,15 +409,15 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
     case OpCode_ADX: {
         cycles += 3;
         OpCode_ADX:
-        uint32_t res = *b_addr + *a_addr + m_ex;
+        long_t res = *b_addr + *a_addr + m_ex;
         *b_addr = res & 0xFFFF;
         m_ex = (res >> 16) & 0xFFFF;
         break;
     }
     case OpCode_SBX: {
         cycles += 3;
-        uint16_t b = *b_addr;
-        uint16_t res = b - *a_addr + m_ex;
+        word_t b = *b_addr;
+        word_t res = b - *a_addr + m_ex;
         *b_addr = res;
         m_ex = res > b ? 0xFFFF : 0;
         break;
@@ -447,10 +446,10 @@ uint8_t DCPU::eval(Memory& mem, Instruction& inst) {
 }
 
 void DCPU::step(Memory& mem) {
-    uint16_t* codebytePtr = mem+m_pc;
+    word_t* codebytePtr = mem+m_pc;
     Instruction nextInstruction = Codex::Decode(codebytePtr, mem.LastValidAddress-m_pc);
-    const uint16_t originalPC = m_pc;
-    const uint8_t cycles = eval(mem, nextInstruction);
+    const word_t originalPC = m_pc;
+    const cycles_t cycles = eval(mem, nextInstruction);
     if (m_pc == originalPC)
         m_pc += nextInstruction.WordCount(); // only increment if it wasn't changed
     m_cycles += cycles;
@@ -460,7 +459,7 @@ void DCPU::step(Memory& mem) {
     }
 
     if (!m_isInterruptQueueActive && !m_queuedInterrupts.empty()) {
-        const uint16_t intMsg = m_queuedInterrupts.front();
+        const word_t intMsg = m_queuedInterrupts.front();
         m_queuedInterrupts.pop();
         m_isInterruptQueueActive = true;
         *(mem + (--m_sp)) = m_pc;
@@ -470,9 +469,9 @@ void DCPU::step(Memory& mem) {
     }
 }
 
-uint32_t DCPU::run(Memory& mem, const vector<uint8_t>& codebytes) {
-    const uint16_t lastProgramAddr = mem.LoadProgram(Codex::PackBytes(codebytes));
-    uint32_t stepCount = 0;
+cycles_t DCPU::run(Memory& mem, const vector<byte_t>& codebytes) {
+    const word_t lastProgramAddr = mem.LoadProgram(Codex::PackBytes(codebytes));
+    cycles_t stepCount = 0;
     while(m_pc < lastProgramAddr) {
         step(mem);
     }
@@ -482,7 +481,7 @@ uint32_t DCPU::run(Memory& mem, const vector<uint8_t>& codebytes) {
     return m_cycles;
 }
 
-void DCPU::interrupt(uint16_t message){
+void DCPU::interrupt(word_t message){
     if (m_ia != 0) {
         m_queuedInterrupts.push(message);
     }

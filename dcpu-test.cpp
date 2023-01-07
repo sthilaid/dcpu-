@@ -65,7 +65,8 @@ bool TestCase::TryTest() const {
     vector<Token> tokens = Token::Tokenize(sourceStream);
     vector<SExp*> sexpressions = SExp::FromTokens(tokens);
     vector<Instruction> instructions = LispAsmParser::FromSExpressions(sexpressions);
-    vector<uint8_t> codebytes = Codex::UnpackBytes(Codex::Encode(instructions));
+    SExp::Delete(sexpressions);
+    vector<byte_t> codebytes = Codex::UnpackBytes(Codex::Encode(instructions));
 
     int test_success = 0;
     DCPU cpu;
@@ -132,7 +133,7 @@ int main(int argc, char** argv) {
                    ,
                    VerifyEqual(cpu.getRegister(Registers_X), 0xFFFF)
                    VerifyEqual(cpu.getEX(), 0xFFFF)
-                   VerifyEqual(cpu.getRegister(Registers_X), static_cast<uint16_t>(-1))
+                   VerifyEqual(cpu.getRegister(Registers_X), static_cast<word_t>(-1))
                    VerifyEqual(cpu.getRegister(Registers_Y), 9)
                    VerifyEqual(mem[555], 9)
                    VerifyEqual(cpu.getCycles(), 10)
@@ -157,7 +158,7 @@ int main(int argc, char** argv) {
                    "(mul x y)"
                    ,
                    VerifyEqual(cpu.getRegister(Registers_X), 1)
-                   VerifyEqual(cpu.getRegister(Registers_Y), static_cast<uint16_t>(-1))
+                   VerifyEqual(cpu.getRegister(Registers_Y), static_cast<word_t>(-1))
                    VerifyEqual(cpu.getCycles(), 4)
                    );
 
@@ -197,7 +198,7 @@ int main(int argc, char** argv) {
                    "(set j 3)"
                    "(mdi i j)"
                    ,
-                   VerifyEqual(cpu.getRegister(Registers_X), static_cast<uint16_t>(-2))
+                   VerifyEqual(cpu.getRegister(Registers_X), static_cast<word_t>(-2))
                    VerifyEqual(cpu.getRegister(Registers_Y), 0)
                    VerifyEqual(cpu.getRegister(Registers_I), 2)
                    VerifyEqual(cpu.getCycles(), 14)
@@ -475,8 +476,8 @@ int main(int argc, char** argv) {
                    "(sbx i 2)"
                    "(sbx j 3)"
                    ,
-                   VerifyEqual(cpu.getRegister(Registers_I), static_cast<uint16_t>(-1))
-                   VerifyEqual(cpu.getRegister(Registers_J), static_cast<uint16_t>(-4))
+                   VerifyEqual(cpu.getRegister(Registers_I), static_cast<word_t>(-1))
+                   VerifyEqual(cpu.getRegister(Registers_J), static_cast<word_t>(-4))
                    VerifyEqual(cpu.getCycles(), 7)
                    );
 
