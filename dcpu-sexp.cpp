@@ -79,4 +79,3 @@ string SExp::toStr() const {
     }
     return str;
 }
-
