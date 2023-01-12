@@ -1,11 +1,8 @@
 #pragma once
-#include <istream>
-#include <vector>
-#include <string>
-#include <dcpu-types.h>
-#include <dcpu-assert.h>
-#include <dcpu-tokenizer.h>
 #include <dcpu-sexp.h>
+#include <dcpu-types.h>
+#include <string>
+#include <vector>
 
 using std::string;
 using std::vector;

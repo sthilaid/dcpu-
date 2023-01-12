@@ -1,4 +1,5 @@
 #include <dcpu-lispasm.h>
+#include <dcpu-tokenizer.h>
 #include <fstream>
 
 int main(int argc, char** args) {

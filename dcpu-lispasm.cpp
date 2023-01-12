@@ -1,7 +1,9 @@
 #include <dcpu-lispasm.h>
-#include <dcpu-sexp.h>
+
 #include <algorithm>
 #include <cstdio>
+#include <dcpu-assert.h>
+#include <dcpu-tokenizer.h>
 #include <fstream>
 
 bool LispAsmParser::ParseOpCodeFromSexp(const SExp::Val& val, OpCode& outOpcode, word_t& outSpecialOp) {

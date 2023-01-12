@@ -1,0 +1,104 @@
+
+;; ((lambda (y)
+;;    ((lambda (x) (* x y))
+;;     10))
+;;  2)
+
+;; ----
+;; 0 ; no env
+;; fy
+;; ---- fy-closure
+;; arg-1 (y)
+;; bp
+;; ---- (top)
+
+(set i sp)
+(set push 0)
+(set push fy) ; fy-env (addr, env count, ...)
+(set push 2) ; arg 1
+(set push i) ; base pointer (stack resotration)
+(jsr fy)
+(set pc halt)
+
+(label fy)
+(set i (ref sp 1)) ; fetch bp
+(set a (ref sp 2)) ; fetch y
+(set j sp)
+(add j 3) ; fetch closure address
+;; -- push fx closure --
+;; Push env
+(set b (ref j 1)) ; fetch env size
+(set x b) ; x = env size
+(set c j)
+(add c 2) ; c = start of env in fy-closure
+(label fy-copy-env)
+(ife x 0)
+(set pc fy-copy-env-done)
+(set push (ref c))
+(add c 1)
+(sub x 1)
+(label fy-copy-env-done)
+;; Push y
+(set push a)
+;; Push new env size
+(add b 1) ; inc size for var y
+(set push b)
+;; Push fn address
+(set push fx)
+;; -- push args
+;; Push arg1
+(set push 10)
+;; Push bp
+(set push i)
+;; -- call closure with arg1 (before args on stack)
+(jsr (ref sp 2))
+(set sp (ref sp)) ; restore callee stack
+(set pc pop)
+
+;; ----
+;; fy-env
+;; y
+;; fy-env-size+1
+;; fx addr
+;; ---- fx closure
+;; y ; arg1
+;; ---- (top)
+
+(label fx)
+(set i (ref sp 1)) ; bp
+(set a (ref sp 2)) ; fetch x
+(set j sp)
+(add j 3) ; fetch closure address
+(set b (ref j 2)) ; fetch y from env (index0 fun addr, index 1 env size)
+(set x sp)
+(set push a) ; <- n2 (arg3)
+(set push b) ; <- n1 (arg2)
+(set push 2) ; <- count (arg1)
+(set push x) ; <- bp
+(jsr mul)
+(set sp (ref sp)) ; restore calleestack
+(set pc pop)
+
+;; ----
+;; n2
+;; n1
+;; count
+;; ---- (top)
+(label mul)
+(set i (ref sp 1)) ; bp
+(set b (ref sp 2)) ; fetch count
+(set c sp)
+(add c 3) ; c is the first arg
+(set a 1)
+(label mul-loop)
+(ife b 0)
+(set pc mul-exit)
+(mul a (ref c))
+(add c 1)
+(sub b 1)
+(set pc mul-loop)
+(label mul-exit)
+(set sp i)
+(set pc pop)
+
+(label halt)

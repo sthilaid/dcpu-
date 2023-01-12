@@ -28,5 +28,16 @@ struct SExp {
     static vector<SExp*> FromTokens(const vector<Token>& tokens);
     static SExp* FromTokens(const vector<Token>& tokens, word_t& i);
 
+    bool isNil() const;
+    bool isFunctionCall() const;
+    bool isSpecialForm(const char* formSym) const;
     string toStr() const;
 };
+
+inline bool SExp::isNil() const { return m_values.empty(); }
+inline bool SExp::isFunctionCall() const { return m_values.size() > 0 && m_values[0].m_type != Val::Number; }
+inline bool SExp::isSpecialForm(const char* formSym) const {
+    return m_values.size() > 0
+        && m_values[0].m_type == Val::Symbol
+        && m_values[0].m_symVal == formSym;
+}

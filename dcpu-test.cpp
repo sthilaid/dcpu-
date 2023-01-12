@@ -1,12 +1,13 @@
 #include <cassert>
-#include <dcpu.h>
-#include <dcpu-mem.h>
-#include <dcpu-lispasm.h>
+#include <cstdlib>
 #include <dcpu-codex.h>
 #include <dcpu-hardware-clock.h>
 #include <dcpu-hardware-tester.h>
+#include <dcpu-lispasm.h>
+#include <dcpu-mem.h>
+#include <dcpu-tokenizer.h>
+#include <dcpu.h>
 #include <sstream>
-#include <cstdlib>
 
 #define CreateTestCase(name, source, ...)                               \
     {                                                                   \

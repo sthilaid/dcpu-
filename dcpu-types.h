@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <string>
+#include <sstream>
 using std::string;
 
 namespace dcpu {
@@ -158,6 +159,12 @@ inline byte_t Instruction::WordCount() const {
     }
 }
 
+inline string NumToHexStr(word_t w) {
+    std::stringstream stream;
+    stream << "0x" << std::hex << w;
+    return std::string( stream.str() );
+}
+
 inline string ValueToStr(Value v, bool isA, word_t nextword){
     if (isA) {
         const word_t numV = static_cast<word_t>(v);
@@ -199,8 +206,8 @@ inline string ValueToStr(Value v, bool isA, word_t nextword){
     case Value_SP: return "SP";
     case Value_PC: return "PC";
     case Value_EX: return "EX";
-    case Value_Next: return "["+std::to_string(nextword)+"]";
-    case Value_NextLitteral: return std::to_string(nextword);
+    case Value_Next: return "["+NumToHexStr(nextword)+"]";
+    case Value_NextLitteral: return NumToHexStr(nextword);
     default: return "[unknown]";
     }
 }
